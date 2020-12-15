@@ -10,10 +10,10 @@ import edu.upc.epsevg.prop.amazons.GameStatus;
 import edu.upc.epsevg.prop.amazons.IAuto;
 import edu.upc.epsevg.prop.amazons.IPlayer;
 import edu.upc.epsevg.prop.amazons.Move;
+import edu.upc.epsevg.prop.amazons.SearchType;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.LinkedList;
-
 
 import java.util.Random;
 
@@ -26,27 +26,11 @@ public class FinalChicken implements IPlayer, IAuto {
     String name;
     // profunditat
     int prof;
-    
-    // Guardem la posicio de les diferents amazones en una llista per a cada color.
-    LinkedList<Point> Blanques, Negres;
-    
+
     public FinalChicken() {
         this.name = "FinalChicken";
-        this.prof = 3;
-        
-        // Inicialitzem les peces amb la posicio que tindran en un estat inicial
-        Blanques = new LinkedList<Point>();
-        Blanques.add(new Point(1,3));
-        Blanques.add(new Point(4,1));
-        Blanques.add(new Point(7,1));
-        Blanques.add(new Point(10,4));
-        
-        Negres = new LinkedList<Point>();
-        Negres.add(new Point(1,7));
-        Negres.add(new Point(4,10));
-        Negres.add(new Point(7,10));
-        Negres.add(new Point(10,7));
-        
+        this.prof = 2;
+
     }
 
     /**
@@ -59,109 +43,211 @@ public class FinalChicken implements IPlayer, IAuto {
     @Override
     public Move move(GameStatus s) {
         
-        int Alpha = Integer.MIN_VALUE; 
+        
+        // ITERATIVE DEEPING:
+           // ---
+           // Poner el timeout y devolver en las funciones MINIMIZADOR I MAXIMIZADOR EN EL CASO BASE.
+        
+        // IMPLEMENTAR TIMEOUT
+        
+        // HASHING:
+        
+        // MEJORAR HAURSTICA:
+        
+        // DOCUMENTACION
+           
+            
+
+        int Alpha = Integer.MIN_VALUE;
         int Beta = Integer.MAX_VALUE;
         int profunditat = this.prof;
-        
-        boolean esBlanca = false;
-        
-        CellType color = s.getCurrentPlayer();
-        if(color.name() == "PLAYER1")
-            esBlanca = true;
-         
-        // Cal saber la posicio de las fitxes del enemic.
-       
-        obtenirPosicionsEnemigues(s, color);
-        
-        // Posarem el millor Moviment en una array on el primer element es el punt on es moura l'amazona i el segon on colocarem la fletxa.
-        Point[] millorMoviment = new Point[2];
-        Point[] moviment = new Point[2];
-        
-        // igual hay que cambiar el  4 luego !!!
-        for(int i = 0; i<4; i++)
-        {
-            if(esBlanca){
-                ArrayList<Point> MovimentsAmazona =  s.getAmazonMoves(Blanques.get(i), false); // restricted ???
-                for(int m = 0; m<MovimentsAmazona.size(); m++)
-                {
-                    GameStatus statusCopia = s;
-                    statusCopia.moveAmazon(Blanques.get(i), MovimentsAmazona.get(m));
-                    
-                    LinkedList<Point> casellesBuides = casellasDisponibles(statusCopia);
-                    for(int c = 0; c < casellesBuides.size(); c++)
-                    {
-                        GameStatus statusCopiaFletxa = statusCopia;
-                        statusCopiaFletxa.placeArrow(casellesBuides.get(c));
-                        
-                        // Posarem el millor moviment en una array 
-                        moviment[0] = MovimentsAmazona.get(m);
-                        moviment[1] = casellesBuides.get(c);
-                        int eval = Minimitzador(statusCopiaFletxa, color.opposite(color), profunditat-1, Alpha, Beta, moviment);
-                        if(eval > Alpha) {
-                           millorMoviment = moviment;                              // guardarem la columna com a millorMoviment fins que un altre doni millor heuristica 
-                           Alpha = eval;                                           // actualitzem Alfa amb la millor heurisitica que hem trobat de moment.
-                       }
-                    
-                    }
-                    
-                    
-                    
-                    
-                    
-                    
-                }
-            }    
-        }
-        
-        
-        
-       
-    }
-    
-    
-    /**
-     * Funció que ens reitorna una llista amb totes les caselles buides del taulell
-     */
 
-    private LinkedList<Point> casellasDisponibles(GameStatus s){
+        // Posarem el millor Moviment en una array on el primer element es el punt on es trobla  l'amazona i el segon on mourem l'amazona i el tercer on colocarem la fletxa.
+        Point[] millorMoviment = new Point[3];
+        Point[] moviment = new Point[3];
+
+        // igual hay que cambiar el  4 luego !!!
+        for (int i = 0; i < 4; i++) {
+            ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
+            for (int m = 0; m < MovimentsAmazona.size(); m++) {
+
+                LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
+
+                for (int c = 0; c < casellesBuides.size(); c++) {
+                    GameStatus statusCopia = new GameStatus(s);
+                    statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
+
+                    
+                    statusCopia.placeArrow(casellesBuides.get(c));
+
+                    // Posarem el millor moviment en una array 
+                    moviment[0] = s.getAmazon(s.getCurrentPlayer(), i);
+                    moviment[1] = MovimentsAmazona.get(m);
+                    moviment[2] = casellesBuides.get(c);
+
+                    
+                    // ES POSSIBLE QUE EL FALLO ESTE EN COLOR.OPPOSITE(COLOR)!!!
+                    int eval = Minimitzador(statusCopia, profunditat - 1, Alpha, Beta);
+                    if (eval > Alpha) {
+                        millorMoviment = moviment.clone();                              // guardarem la columna com a millorMoviment fins que un altre doni millor heuristica 
+                        Alpha = eval;                                           // actualitzem Alfa amb la millor heurisitica que hem trobat de moment.
+                    }
+
+                }
+            }
+           
+        }
+
+        return new Move(millorMoviment[0], millorMoviment[1], millorMoviment[2], 0, 0, SearchType.RANDOM);
+    }
+
+    private int Maximitzador(GameStatus s, int Profunditat, int Alpha, int Beta) {
+
+        // En cas de ser solucio, hem perdut. Vol dir que el ultim moviment (rival) ens ha guanyat.
+        //  if(t.solucio(Columna, -color)) return Integer.MIN_VALUE;
+        if (s.GetWinner() == CellType.opposite(s.getCurrentPlayer())) {
+            return Integer.MIN_VALUE;
+        }
+
+        // Evaluem si en aquesta columna no es pot afegir mes fitxes o hem arribat a la profunditat maxima de exploracio
+        if (Profunditat == 0) {
+            return -1 * getHeuristica(s, CellType.opposite(s.getCurrentPlayer()));                                 // Retornem la evaluacio heurisitca del taulell en aquesta situacio
+        }
+
+        // igual hay que cambiar el  4 luego !!!
+        for (int i = 0; i < 4; i++) {
+            ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
+            for (int m = 0; m < MovimentsAmazona.size(); m++) {
+
+                LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
+
+                for (int c = 0; c < casellesBuides.size(); c++) {
+                    GameStatus statusCopia = new GameStatus(s);
+                    statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
+                    statusCopia.placeArrow(casellesBuides.get(c));
+
+
+                    int eval = Math.max(Alpha, Minimitzador(statusCopia, Profunditat - 1, Alpha, Beta));
+                    Alpha = Math.max(Alpha, eval);
+                    // Comprobem si beta es menor que Alpha, aixo indicara que per aquesta branca no cal seguir i retornem Beta com el minim exigible del arbre.
+                    if (Beta <= Alpha) {
+                        return Beta;
+                    }
+                }
+            }
+        }
+        return Alpha;   // Retornem Alpha que sera el valor heuristic maxim obtingut del proces.
+    }
+
+    /**
+     * Funcio que s'encarrega de establir la capa minimitzadora del algorisme i
+     * obtenir la jugada amb pitjor heurisitca
+     *
+     * <p>
+     * La funcio el que fa es iterar sobre els diferents moviments possibles i
+     * obtenir la heurisitca minima obtinguda de compararlos tots.</p>
+     *
+     * <p>
+     * El que es fa es principalment es valorar el cas base que es mirar si el
+     * ultim moviment es perdedor, si es el cas retornem infinit ja que aixo
+     * indica que hem guanyat. Un altre cas base eque es mirar si hem arribat a
+     * la profunidat maxima o no hi ha moviment possible, en aquest cas mirarem
+     * la heurisitca per aquell estan en concret. Finalment el cas recursiu es
+     * iterar sobre els diferents moviments possibles i quedarnos amb la
+     * heuristica minima de tots ells. </p>
+     *
+     *
+     * @param t Es un objecte tipus taulell que correspon al ultim estat del
+     * taulell.
+     * @param color Es tracta de quin jugador li toca jugar... Si es 1 ets tu
+     * mateix i si es -1 es el rival.
+     * @param Alpha Es tracta del valor que contindra el maxim exigible
+     * heuristic actual en les diferents crides.
+     * @param Beta Es tracta del valor que contindra el minim en les diferents
+     * crides
+     * @return Es tracta de retornar la columna que correspon a la heuristica
+     * minima.
+     */
+    private int Minimitzador(GameStatus s, int Profunditat, int Alpha, int Beta) {
+
+        // En cas de ser solucio, hem perdut. Vol dir que el ultim moviment (rival) ens ha guanyat.
+        //  if(t.solucio(Columna, -color)) return Integer.MIN_VALUE;
+        if (s.GetWinner() == CellType.opposite(s.getCurrentPlayer())) {
+            return Integer.MAX_VALUE;
+        }
+
+        // Evaluem si en aquesta columna no es pot afegir mes fitxes o hem arribat a la profunditat maxima de exploracio
+        
+        // MIRAR SI HEMOS ACABADO EL TIMEOUT.
+        if (Profunditat == 0) {
+            return getHeuristica(s, CellType.opposite(s.getCurrentPlayer()));                                 // Retornem la evaluacio heurisitca del taulell en aquesta situacio
+        }
+        // igual hay que cambiar el  4 luego !!!
+        for (int i = 0; i < 4; i++) {
+            ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
+            for (int m = 0; m < MovimentsAmazona.size(); m++) {
+
+                LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
+
+                for (int c = 0; c < casellesBuides.size(); c++) {
+                    GameStatus statusCopia = new GameStatus(s);
+                    statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
+
+                    statusCopia.placeArrow(casellesBuides.get(c));
+
+                    // Posarem el millor moviment en una array 
     
+
+                    int eval = Math.min(Beta, Maximitzador(statusCopia, Profunditat - 1, Alpha, Beta));
+                    Beta = Math.min(Beta, eval);
+                    // Comprobem si beta es menor que Alpha, aixo indicara que per aquesta branca no cal seguir i retornem Beta com el minim exigible del arbre.
+                    if (Beta <= Alpha) {
+                        return Alpha;
+                    }
+                }
+            }
+
+        }
+        return Beta;   // Retornem Alpha que sera el valor heuristic maxim obtingut del proces.
+    }
+
+    /**
+     * Funció que ens reitorna una llista amb totes les caselles buides del
+     * taulell
+     */
+    private LinkedList<Point> casellasDisponibles(GameStatus s, int am, Point FIN) {
+
         LinkedList<Point> casellesBuides = new LinkedList<Point>();
-        for(int i = 0; i<s.getSize(); i++)
-            for(int j = 0; j<s.getSize(); j++)
-                if(s.getPos(i,j).name() == "EMPTY")
-                    casellesBuides.add(new Point(i, j));
+
+        Point peca;
+        for (int i = 0; i < s.getSize(); i++) {
+            for (int j = 0; j < s.getSize(); j++) {
+                peca = new Point(i, j);
+                if ((s.getPos(i, j) == CellType.EMPTY) && (!peca.equals(FIN))) {
+                    casellesBuides.add(peca);
+                }
+            }
+        }
+        casellesBuides.add(s.getAmazon(s.getCurrentPlayer(),am));
         return casellesBuides;
     }
-    
-    
-    
-    /**
-     * Funció que ens actualiza el vector AmazonesEnemigues amb la posicio actual de cadascuna
-     */
-    private void obtenirPosicionsEnemigues(GameStatus s, CellType color){
-        
-        System.out.println("QUIEN SOY? "+color.opposite(color));
-       
-        
-        if(color.name() == "PLAYER1") // esBlanca
-        {
-          for(int i = 0; i<Negres.size(); i++)
-          {
-              // Intrecambiem la posicio antiga per la posicio actual.
-              Negres.set(i, s.getAmazon(color.opposite(color) , i));                            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-          }
+
+    public int getHeuristica(GameStatus s, CellType color) {
+
+        int movPossibles = 0;
+        int movPossiblesRival = 0;
+
+        ArrayList<Point> MovimentsAmazona;
+
+        for (int i = 0; i < 4; i++) {
+            MovimentsAmazona = s.getAmazonMoves(s.getAmazon(color, i), false); // restricted 
+            movPossibles += MovimentsAmazona.size();
+            MovimentsAmazona = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
+            movPossiblesRival += MovimentsAmazona.size();
         }
-        else{  // es Negra
-            
-            for(int i = 0; i<Blanques.size(); i++)
-          {
-              // Intrecambiem la posicio antiga per la posicio actual.
-              Blanques.set(i, s.getAmazon(color, i));
-          }
-        }
+
+        return (movPossibles - movPossiblesRival);
     }
-    
-    
 
     /**
      * Ens avisa que hem de parar la cerca en curs perquè s'ha exhaurit el temps
