@@ -29,7 +29,7 @@ public class FinalChicken implements IPlayer, IAuto {
 
     public FinalChicken() {
         this.name = "FinalChicken";
-        this.prof = 2;
+        this.prof = 4;
 
     }
 

@@ -24,7 +24,7 @@ public class Amazons {
                 IPlayer player2 = new CarlinhosPlayer();
                 
                 // FULL_BOARD...
-                new AmazonsBoard(player1 , player2, 10, Level.HALF_BOARD);
+                new AmazonsBoard(player1 , player2, 10, Level.FULL_BOARD);
                 
             }
         });
