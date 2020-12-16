@@ -26,10 +26,14 @@ public class FinalChicken implements IPlayer, IAuto {
     String name;
     // profunditat
     int prof;
+    boolean timeout;
+    long nnodes;
 
     public FinalChicken() {
         this.name = "FinalChicken";
-        this.prof = 4;
+        this.prof = 1;
+        this.timeout = false;
+        this.nnodes = 0;
 
     }
 
@@ -43,7 +47,9 @@ public class FinalChicken implements IPlayer, IAuto {
     @Override
     public Move move(GameStatus s) {
         
-        
+        this.timeout = false;
+        this.nnodes = 0;
+        this.prof = 1;
         // ITERATIVE DEEPING:
            // ---
            // Poner el timeout y devolver en las funciones MINIMIZADOR I MAXIMIZADOR EN EL CASO BASE.
@@ -55,8 +61,17 @@ public class FinalChicken implements IPlayer, IAuto {
         // MEJORAR HAURSTICA:
         
         // DOCUMENTACION
-           
-            
+        
+        Move m = new Move(new Point(), new Point(), new Point(), 0,0, SearchType.RANDOM);
+        while(!timeout){
+            Move t = movimentProfunditat(s);
+            m = new Move(t.getAmazonFrom(), t.getAmazonTo(), t.getArrowTo(), (int)t.getNumerOfNodesExplored(), t.getMaxDepthReached(), t.getSearchType());
+            ++this.prof;
+        }
+        return m;
+    }
+    
+    private Move movimentProfunditat(GameStatus s){
 
         int Alpha = Integer.MIN_VALUE;
         int Beta = Integer.MAX_VALUE;
@@ -67,13 +82,13 @@ public class FinalChicken implements IPlayer, IAuto {
         Point[] moviment = new Point[3];
 
         // igual hay que cambiar el  4 luego !!!
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4 && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
-            for (int m = 0; m < MovimentsAmazona.size(); m++) {
+            for (int m = 0; m < MovimentsAmazona.size()  && (!this.timeout); m++) {
 
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
-                for (int c = 0; c < casellesBuides.size(); c++) {
+                for (int c = 0; c < casellesBuides.size()  && (!this.timeout); c++) {
                     GameStatus statusCopia = new GameStatus(s);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
 
@@ -98,7 +113,7 @@ public class FinalChicken implements IPlayer, IAuto {
            
         }
 
-        return new Move(millorMoviment[0], millorMoviment[1], millorMoviment[2], 0, 0, SearchType.RANDOM);
+        return new Move(millorMoviment[0], millorMoviment[1], millorMoviment[2], (int) this.nnodes, this.prof, SearchType.MINIMAX);
     }
 
     private int Maximitzador(GameStatus s, int Profunditat, int Alpha, int Beta) {
@@ -106,22 +121,23 @@ public class FinalChicken implements IPlayer, IAuto {
         // En cas de ser solucio, hem perdut. Vol dir que el ultim moviment (rival) ens ha guanyat.
         //  if(t.solucio(Columna, -color)) return Integer.MIN_VALUE;
         if (s.GetWinner() == CellType.opposite(s.getCurrentPlayer())) {
+            System.out.println("HE GANADO");
             return Integer.MIN_VALUE;
         }
 
         // Evaluem si en aquesta columna no es pot afegir mes fitxes o hem arribat a la profunditat maxima de exploracio
-        if (Profunditat == 0) {
+        if (Profunditat == 0 || this.timeout) {
             return -1 * getHeuristica(s, CellType.opposite(s.getCurrentPlayer()));                                 // Retornem la evaluacio heurisitca del taulell en aquesta situacio
         }
 
         // igual hay que cambiar el  4 luego !!!
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4  && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
-            for (int m = 0; m < MovimentsAmazona.size(); m++) {
+            for (int m = 0; m < MovimentsAmazona.size()  && (!this.timeout); m++) {
 
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
-                for (int c = 0; c < casellesBuides.size(); c++) {
+                for (int c = 0; c < casellesBuides.size()  && (!this.timeout); c++) {
                     GameStatus statusCopia = new GameStatus(s);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
                     statusCopia.placeArrow(casellesBuides.get(c));
@@ -173,23 +189,24 @@ public class FinalChicken implements IPlayer, IAuto {
         // En cas de ser solucio, hem perdut. Vol dir que el ultim moviment (rival) ens ha guanyat.
         //  if(t.solucio(Columna, -color)) return Integer.MIN_VALUE;
         if (s.GetWinner() == CellType.opposite(s.getCurrentPlayer())) {
+            System.out.println("HE PERDIDO");
             return Integer.MAX_VALUE;
         }
 
         // Evaluem si en aquesta columna no es pot afegir mes fitxes o hem arribat a la profunditat maxima de exploracio
         
         // MIRAR SI HEMOS ACABADO EL TIMEOUT.
-        if (Profunditat == 0) {
+        if (Profunditat == 0 || this.timeout) {
             return getHeuristica(s, CellType.opposite(s.getCurrentPlayer()));                                 // Retornem la evaluacio heurisitca del taulell en aquesta situacio
         }
         // igual hay que cambiar el  4 luego !!!
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4  && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
-            for (int m = 0; m < MovimentsAmazona.size(); m++) {
+            for (int m = 0; m < MovimentsAmazona.size()  && (!this.timeout); m++) {
 
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
-                for (int c = 0; c < casellesBuides.size(); c++) {
+                for (int c = 0; c < casellesBuides.size()  && (!this.timeout); c++) {
                     GameStatus statusCopia = new GameStatus(s);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
 
@@ -245,7 +262,7 @@ public class FinalChicken implements IPlayer, IAuto {
             MovimentsAmazona = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
             movPossiblesRival += MovimentsAmazona.size();
         }
-
+        ++this.nnodes;
         return (movPossibles - movPossiblesRival);
     }
 
@@ -256,6 +273,7 @@ public class FinalChicken implements IPlayer, IAuto {
     @Override
     public void timeout() {
         // Bah! Humans do not enjoy timeouts, oh, poor beasts !
+        this.timeout = true;
         System.out.println("Bah! You are so slow...");
     }
 
