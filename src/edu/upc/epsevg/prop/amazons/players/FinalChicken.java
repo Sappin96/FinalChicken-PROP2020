@@ -29,6 +29,10 @@ public class FinalChicken implements IPlayer, IAuto {
     boolean timeout;
     long nnodes;
     long[][][] zobristTable;
+    int juga1 = 0;
+    int juga2 = 1;
+    int creueta = 2;
+    int buit = 3;
     
     public FinalChicken() {
         this.name = "FinalChicken";
@@ -36,6 +40,7 @@ public class FinalChicken implements IPlayer, IAuto {
         this.timeout = false;
         this.nnodes = 0;
         this.zobristTable = new long[10][10][3];
+        
         generaTaulaHash();
         
     }
@@ -88,22 +93,23 @@ public class FinalChicken implements IPlayer, IAuto {
         int Alpha = Integer.MIN_VALUE;
         int Beta = Integer.MAX_VALUE;
         int profunditat = this.prof;
-
+        long hash = RecalcularHash(s);
+        
         // Posarem el millor Moviment en una array on el primer element es el punt on es trobla  l'amazona i el segon on mourem l'amazona i el tercer on colocarem la fletxa.
         Point[] millorMoviment = new Point[3];
         Point[] moviment = new Point[3];
 
-        // igual hay que cambiar el  4 luego !!!
         for (int i = 0; i < 4 && (!this.timeout); i++) {
-            ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
-            for (int m = 0; m < MovimentsAmazona.size(); m++) {
+            ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted == si es false revisa todas las posiciones, si es true solo las limite.
+            for (int m = 0; m < MovimentsAmazona.size(); m++) { //Quitado timeout
 
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
-
-                for (int c = 0; c < casellesBuides.size(); c++) {
+                
+                for (int c = 0; c < casellesBuides.size(); c++) { //quitado timeout
                     GameStatus statusCopia = new GameStatus(s);
+                    hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][IndexDe(s.getPos(s.getAmazon(s.getCurrentPlayer(), i)))];
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
-
+                    hash ^= this.zobristTable[s.getAmazon(s.getCurrentPlayer(), i).x][s.getAmazon(s.getCurrentPlayer(), i).y][IndexDe(s.getPos(s.getAmazon(s.getCurrentPlayer(), i)))];
                     
                     statusCopia.placeArrow(casellesBuides.get(c));
 
@@ -113,8 +119,9 @@ public class FinalChicken implements IPlayer, IAuto {
                     moviment[2] = casellesBuides.get(c);
 
                     
-                    // ES POSSIBLE QUE EL FALLO ESTE EN COLOR.OPPOSITE(COLOR)!!!
+                    // Es posible que en casos extremos no entre en 120 -> 123; eval nunca es mayor a alpha
                     int eval = Minimitzador(statusCopia, profunditat - 1, Alpha, Beta);
+                    System.out.println("EVAL / ALPHA: "+eval+" // "+Alpha);
                     if (eval > Alpha) {
                         millorMoviment = moviment.clone();                              // guardarem la columna com a millorMoviment fins que un altre doni millor heuristica 
                         Alpha = eval;                                           // actualitzem Alfa amb la millor heurisitica que hem trobat de moment.
@@ -128,6 +135,11 @@ public class FinalChicken implements IPlayer, IAuto {
         System.out.println("Origen: "+millorMoviment[0]);
         System.out.println("Destino: "+millorMoviment[1]);
         System.out.println("Fletxa: "+millorMoviment[1]);
+        
+        if(millorMoviment[0] == null){
+            //TODO: REVISAR AMB BERNAT; Tirada tonta quan tots els moviments son perdedors
+            millorMoviment = moviment.clone();
+        }
         
         return new Move(millorMoviment[0], millorMoviment[1], millorMoviment[2], (int) this.nnodes, this.prof, SearchType.MINIMAX);
     }
@@ -285,11 +297,50 @@ public class FinalChicken implements IPlayer, IAuto {
      */
      private void generaTaulaHash(){
          
-         for(int i = 0; i<8; i++)
-             for(int j = 0; j<8; j++)
+         for(int i = 0; i<9; i++)
+             for(int j = 0; j<9; j++)
                  for(int k = 0; k<3; k++)
                      this.zobristTable[i][j][k] = (long) Math.random();
          
+     }
+     
+         /**
+     * Funció que s'encarrega de recalcular el hash del tauler
+     */
+     private long RecalcularHash(GameStatus s){
+         long h = 0;
+         //TODO: Hacer variable el tamaño del tablero
+         for(int i = 0; i<9; i++){
+             for(int j = 0; j<9; j++){
+                 if(s.getPos(i, j) != CellType.EMPTY){
+                     CellType pieza = s.getPos(i, j);
+                     int n; //P1 = 0, P2 = 1, ARR = 2, EMPT = 3
+                     if (pieza == CellType.ARROW){
+                         n=this.creueta;
+                     }else if(pieza == CellType.PLAYER1){
+                         n=this.juga1;
+                     }else{
+                         n=this.juga2;
+                     }
+                     h ^= this.zobristTable[i][j][n];
+                 }
+             }
+         }
+         return h;   
+     }
+     
+     private int IndexDe(CellType a){
+        int n;
+        if (a == CellType.PLAYER1){
+            n=this.juga1;
+        }else if(a == CellType.PLAYER2){
+            n=this.juga2;
+        }else if(a == CellType.ARROW){
+            n=this.creueta;
+        }else{
+            n=this.buit;
+        }
+        return n;
      }
     
     
