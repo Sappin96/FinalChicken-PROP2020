@@ -28,13 +28,16 @@ public class FinalChicken implements IPlayer, IAuto {
     int prof;
     boolean timeout;
     long nnodes;
-
+    long[][][] zobristTable;
+    
     public FinalChicken() {
         this.name = "FinalChicken";
         this.prof = 1;
         this.timeout = false;
         this.nnodes = 0;
-
+        this.zobristTable = new long[10][10][3];
+        generaTaulaHash();
+        
     }
 
     /**
@@ -63,12 +66,21 @@ public class FinalChicken implements IPlayer, IAuto {
         // DOCUMENTACION
         
         Move m = new Move(new Point(), new Point(), new Point(), 0,0, SearchType.RANDOM);
+        Move mAnterior = new Move(new Point(), new Point(), new Point(), 0,0, SearchType.RANDOM);
         while(!timeout){
+            mAnterior = new Move(m.getAmazonFrom(), m.getAmazonTo(), m.getArrowTo(), (int)m.getNumerOfNodesExplored(), m.getMaxDepthReached(), m.getSearchType());
             Move t = movimentProfunditat(s);
             m = new Move(t.getAmazonFrom(), t.getAmazonTo(), t.getArrowTo(), (int)t.getNumerOfNodesExplored(), t.getMaxDepthReached(), t.getSearchType());
             ++this.prof;
         }
-        return m;
+        
+        if(m.getAmazonFrom()==null)
+        {
+            System.out.println("mAnterior");
+            return mAnterior;
+        }
+        else
+            return m;
     }
     
     private Move movimentProfunditat(GameStatus s){
@@ -84,11 +96,11 @@ public class FinalChicken implements IPlayer, IAuto {
         // igual hay que cambiar el  4 luego !!!
         for (int i = 0; i < 4 && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
-            for (int m = 0; m < MovimentsAmazona.size()  && (!this.timeout); m++) {
+            for (int m = 0; m < MovimentsAmazona.size(); m++) {
 
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
-                for (int c = 0; c < casellesBuides.size()  && (!this.timeout); c++) {
+                for (int c = 0; c < casellesBuides.size(); c++) {
                     GameStatus statusCopia = new GameStatus(s);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
 
@@ -113,6 +125,10 @@ public class FinalChicken implements IPlayer, IAuto {
            
         }
 
+        System.out.println("Origen: "+millorMoviment[0]);
+        System.out.println("Destino: "+millorMoviment[1]);
+        System.out.println("Fletxa: "+millorMoviment[1]);
+        
         return new Move(millorMoviment[0], millorMoviment[1], millorMoviment[2], (int) this.nnodes, this.prof, SearchType.MINIMAX);
     }
 
@@ -121,7 +137,6 @@ public class FinalChicken implements IPlayer, IAuto {
         // En cas de ser solucio, hem perdut. Vol dir que el ultim moviment (rival) ens ha guanyat.
         //  if(t.solucio(Columna, -color)) return Integer.MIN_VALUE;
         if (s.GetWinner() == CellType.opposite(s.getCurrentPlayer())) {
-            System.out.println("HE GANADO");
             return Integer.MIN_VALUE;
         }
 
@@ -189,7 +204,6 @@ public class FinalChicken implements IPlayer, IAuto {
         // En cas de ser solucio, hem perdut. Vol dir que el ultim moviment (rival) ens ha guanyat.
         //  if(t.solucio(Columna, -color)) return Integer.MIN_VALUE;
         if (s.GetWinner() == CellType.opposite(s.getCurrentPlayer())) {
-            System.out.println("HE PERDIDO");
             return Integer.MAX_VALUE;
         }
 
@@ -265,6 +279,20 @@ public class FinalChicken implements IPlayer, IAuto {
         ++this.nnodes;
         return (movPossibles - movPossiblesRival);
     }
+    
+    /**
+     * Funció que s'encarrega de generar la taula de Zobrist
+     */
+     private void generaTaulaHash(){
+         
+         for(int i = 0; i<8; i++)
+             for(int j = 0; j<8; j++)
+                 for(int k = 0; k<3; k++)
+                     this.zobristTable[i][j][k] = (long) Math.random();
+         
+     }
+    
+    
 
     /**
      * Ens avisa que hem de parar la cerca en curs perquè s'ha exhaurit el temps
