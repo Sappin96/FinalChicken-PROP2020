@@ -39,7 +39,7 @@ public class FinalChicken implements IPlayer, IAuto {
         this.prof = 1;
         this.timeout = false;
         this.nnodes = 0;
-        this.zobristTable = new long[10][10][3];
+        this.zobristTable = new long[10][10][4];
         
         generaTaulaHash();
         
@@ -107,10 +107,11 @@ public class FinalChicken implements IPlayer, IAuto {
                 
                 for (int c = 0; c < casellesBuides.size(); c++) { //quitado timeout
                     GameStatus statusCopia = new GameStatus(s);
-                    hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][IndexDe(s.getPos(s.getAmazon(s.getCurrentPlayer(), i)))];
+                    hash ^= this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))];
+                    System.out.println(this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))]);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
-                    hash ^= this.zobristTable[s.getAmazon(s.getCurrentPlayer(), i).x][s.getAmazon(s.getCurrentPlayer(), i).y][IndexDe(s.getPos(s.getAmazon(s.getCurrentPlayer(), i)))];
-                    
+                    hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][this.buit];
+                    System.out.println(hash);
                     statusCopia.placeArrow(casellesBuides.get(c));
 
                     // Posarem el millor moviment en una array 
@@ -121,7 +122,7 @@ public class FinalChicken implements IPlayer, IAuto {
                     
                     // Es posible que en casos extremos no entre en 120 -> 123; eval nunca es mayor a alpha
                     int eval = Minimitzador(statusCopia, profunditat - 1, Alpha, Beta);
-                    System.out.println("EVAL / ALPHA: "+eval+" // "+Alpha);
+                    //System.out.println("EVAL / ALPHA: "+eval+" // "+Alpha);
                     if (eval > Alpha) {
                         millorMoviment = moviment.clone();                              // guardarem la columna com a millorMoviment fins que un altre doni millor heuristica 
                         Alpha = eval;                                           // actualitzem Alfa amb la millor heurisitica que hem trobat de moment.
@@ -297,9 +298,9 @@ public class FinalChicken implements IPlayer, IAuto {
      */
      private void generaTaulaHash(){
          
-         for(int i = 0; i<9; i++)
-             for(int j = 0; j<9; j++)
-                 for(int k = 0; k<3; k++)
+         for(int i = 0; i<10; i++)
+             for(int j = 0; j<10; j++)
+                 for(int k = 0; k<4; k++)
                      this.zobristTable[i][j][k] = (long) Math.random();
          
      }
