@@ -56,7 +56,6 @@ public class FinalChicken implements IPlayer, IAuto {
     public Move move(GameStatus s) {
         
         this.timeout = false;
-        this.nnodes = 0;
         this.prof = 1;
         // ITERATIVE DEEPING:
            // ---
@@ -81,7 +80,7 @@ public class FinalChicken implements IPlayer, IAuto {
         
         if(m.getAmazonFrom()==null)
         {
-            System.out.println("mAnterior");
+            //System.out.println("mAnterior");
             return mAnterior;
         }
         else
@@ -89,17 +88,17 @@ public class FinalChicken implements IPlayer, IAuto {
     }
     
     private Move movimentProfunditat(GameStatus s){
-
+        this.nnodes = 0;
         int Alpha = Integer.MIN_VALUE;
         int Beta = Integer.MAX_VALUE;
         int profunditat = this.prof;
-        long hash = RecalcularHash(s);
+        //long hash = RecalcularHash(s);
         
         // Posarem el millor Moviment en una array on el primer element es el punt on es trobla  l'amazona i el segon on mourem l'amazona i el tercer on colocarem la fletxa.
         Point[] millorMoviment = new Point[3];
         Point[] moviment = new Point[3];
 
-        for (int i = 0; i < 4 && (!this.timeout); i++) {
+        for (int i = 0; i < s.getNumberOfAmazonsForEachColor() && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted == si es false revisa todas las posiciones, si es true solo las limite.
             for (int m = 0; m < MovimentsAmazona.size(); m++) { //Quitado timeout
 
@@ -107,11 +106,11 @@ public class FinalChicken implements IPlayer, IAuto {
                 
                 for (int c = 0; c < casellesBuides.size(); c++) { //quitado timeout
                     GameStatus statusCopia = new GameStatus(s);
-                    hash ^= this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))];
-                    System.out.println(this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))]);
+                    //hash ^= this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))];
+                    //System.out.println(this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))]);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
-                    hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][this.buit];
-                    System.out.println(hash);
+                    //hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][this.buit];
+                    //System.out.println(hash);
                     statusCopia.placeArrow(casellesBuides.get(c));
 
                     // Posarem el millor moviment en una array 
@@ -133,9 +132,9 @@ public class FinalChicken implements IPlayer, IAuto {
            
         }
 
-        System.out.println("Origen: "+millorMoviment[0]);
-        System.out.println("Destino: "+millorMoviment[1]);
-        System.out.println("Fletxa: "+millorMoviment[1]);
+        //System.out.println("Origen: "+millorMoviment[0]);
+        //System.out.println("Destino: "+millorMoviment[1]);
+        //System.out.println("Fletxa: "+millorMoviment[1]);
         
         if(millorMoviment[0] == null){
             //TODO: REVISAR AMB BERNAT; Tirada tonta quan tots els moviments son perdedors
@@ -159,7 +158,7 @@ public class FinalChicken implements IPlayer, IAuto {
         }
 
         // igual hay que cambiar el  4 luego !!!
-        for (int i = 0; i < 4  && (!this.timeout); i++) {
+        for (int i = 0; i < s.getNumberOfAmazonsForEachColor()  && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
             for (int m = 0; m < MovimentsAmazona.size()  && (!this.timeout); m++) {
 
@@ -227,7 +226,7 @@ public class FinalChicken implements IPlayer, IAuto {
             return getHeuristica(s, CellType.opposite(s.getCurrentPlayer()));                                 // Retornem la evaluacio heurisitca del taulell en aquesta situacio
         }
         // igual hay que cambiar el  4 luego !!!
-        for (int i = 0; i < 4  && (!this.timeout); i++) {
+        for (int i = 0; i < s.getNumberOfAmazonsForEachColor()  && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
             for (int m = 0; m < MovimentsAmazona.size()  && (!this.timeout); m++) {
 
@@ -283,11 +282,36 @@ public class FinalChicken implements IPlayer, IAuto {
 
         ArrayList<Point> MovimentsAmazona;
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < s.getNumberOfAmazonsForEachColor(); i++) {
             MovimentsAmazona = s.getAmazonMoves(s.getAmazon(color, i), false); // restricted 
             movPossibles += MovimentsAmazona.size();
             MovimentsAmazona = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
             movPossiblesRival += MovimentsAmazona.size();
+            Point maleante = new Point(s.getAmazon(CellType.opposite(color), i));
+            Point honorable = new Point(s.getAmazon(color, i));
+            int encontra = 0;
+            int afavor = 0;
+            for (int x = -1; x < 2; x++){
+                for (int y = -1; y<2; y++){
+                    if(maleante.x+x>=0 && maleante.x+x<s.getSize() && maleante.y+y>=0 && maleante.y+y<s.getSize() && (s.getPos(maleante.x+x,maleante.y+y) != CellType.EMPTY) && (s.getPos(maleante.x+x,maleante.y+y) != CellType.opposite(color))){
+                        ++afavor;
+                    }
+                    if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0 && honorable.y+y<s.getSize() && (s.getPos(honorable.x+x,honorable.y+y) != CellType.EMPTY) && (s.getPos(honorable.x+x,honorable.y+y) != CellType.opposite(color))){
+                        ++encontra;
+                    }
+                }
+            }
+//            if(afavor==8){
+                //System.out.println("se me va la pinza: "+maleante.x+" "+maleante.y);
+                //movPossibles += afavor*2;
+//            }
+            movPossibles += Math.pow(2, afavor);
+            movPossiblesRival += Math.pow(2, encontra);
+            
+            
+            //System.out.println("ficha ENEMIGA("+i+") encontra por "+afavor+" : ("+ maleante.x+" "+maleante.y+")");
+            //System.out.println("ficha AMIGA("+i+") encontra por "+encontra+" : ("+ honorable.x+" "+honorable.y+")");
+            //System.out.println(s.toString());
         }
         ++this.nnodes;
         return (movPossibles - movPossiblesRival);
@@ -354,7 +378,7 @@ public class FinalChicken implements IPlayer, IAuto {
     public void timeout() {
         // Bah! Humans do not enjoy timeouts, oh, poor beasts !
         this.timeout = true;
-        System.out.println("Bah! You are so slow...");
+        //System.out.println("Bah! You are so slow...");
     }
 
     /**
