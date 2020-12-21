@@ -33,16 +33,16 @@ public class FinalChicken implements IPlayer, IAuto {
     int juga2 = 1;
     int creueta = 2;
     int buit = 3;
-    
+
     public FinalChicken() {
         this.name = "FinalChicken";
         this.prof = 1;
         this.timeout = false;
         this.nnodes = 0;
         this.zobristTable = new long[10][10][4];
-        
+
         generaTaulaHash();
-        
+
     }
 
     /**
@@ -54,64 +54,59 @@ public class FinalChicken implements IPlayer, IAuto {
      */
     @Override
     public Move move(GameStatus s) {
-        
+
         this.timeout = false;
-        this.nnodes = 0;
         this.prof = 1;
         // ITERATIVE DEEPING:
-           // ---
-           // Poner el timeout y devolver en las funciones MINIMIZADOR I MAXIMIZADOR EN EL CASO BASE.
-        
+        // ---
+        // Poner el timeout y devolver en las funciones MINIMIZADOR I MAXIMIZADOR EN EL CASO BASE.
+
         // IMPLEMENTAR TIMEOUT
-        
         // HASHING:
-        
         // MEJORAR HAURSTICA:
-        
         // DOCUMENTACION
-        
-        Move m = new Move(new Point(), new Point(), new Point(), 0,0, SearchType.RANDOM);
-        Move mAnterior = new Move(new Point(), new Point(), new Point(), 0,0, SearchType.RANDOM);
-        while(!timeout){
-            mAnterior = new Move(m.getAmazonFrom(), m.getAmazonTo(), m.getArrowTo(), (int)m.getNumerOfNodesExplored(), m.getMaxDepthReached(), m.getSearchType());
+        Move m = new Move(new Point(), new Point(), new Point(), 0, 0, SearchType.RANDOM);
+        Move mAnterior = new Move(new Point(), new Point(), new Point(), 0, 0, SearchType.RANDOM);
+        while (!timeout) {
+            mAnterior = new Move(m.getAmazonFrom(), m.getAmazonTo(), m.getArrowTo(), (int) m.getNumerOfNodesExplored(), m.getMaxDepthReached(), m.getSearchType());
             Move t = movimentProfunditat(s);
-            m = new Move(t.getAmazonFrom(), t.getAmazonTo(), t.getArrowTo(), (int)t.getNumerOfNodesExplored(), t.getMaxDepthReached(), t.getSearchType());
+            m = new Move(t.getAmazonFrom(), t.getAmazonTo(), t.getArrowTo(), (int) t.getNumerOfNodesExplored(), t.getMaxDepthReached(), t.getSearchType());
             ++this.prof;
         }
-        
-        if(m.getAmazonFrom()==null)
-        {
+
+        if (m.getAmazonFrom() == null) {
             System.out.println("mAnterior");
             return mAnterior;
-        }
-        else
+        } else {
             return m;
+        }
     }
-    
-    private Move movimentProfunditat(GameStatus s){
+
+    private Move movimentProfunditat(GameStatus s) {
 
         int Alpha = Integer.MIN_VALUE;
         int Beta = Integer.MAX_VALUE;
         int profunditat = this.prof;
-        long hash = RecalcularHash(s);
-        
+        this.nnodes = 0;
+       // long hash = RecalcularHash(s);
+
         // Posarem el millor Moviment en una array on el primer element es el punt on es trobla  l'amazona i el segon on mourem l'amazona i el tercer on colocarem la fletxa.
         Point[] millorMoviment = new Point[3];
         Point[] moviment = new Point[3];
 
-        for (int i = 0; i < 4 && (!this.timeout); i++) {
+        for (int i = 0; i < s.getNumberOfAmazonsForEachColor() && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted == si es false revisa todas las posiciones, si es true solo las limite.
             for (int m = 0; m < MovimentsAmazona.size(); m++) { //Quitado timeout
 
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
-                
+
                 for (int c = 0; c < casellesBuides.size(); c++) { //quitado timeout
                     GameStatus statusCopia = new GameStatus(s);
-                    hash ^= this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))];
-                    System.out.println(this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))]);
+                   // hash ^= this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))];
+                   // System.out.println(this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))]);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
-                    hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][this.buit];
-                    System.out.println(hash);
+                   // hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][this.buit];
+                    //System.out.println(hash);
                     statusCopia.placeArrow(casellesBuides.get(c));
 
                     // Posarem el millor moviment en una array 
@@ -119,7 +114,6 @@ public class FinalChicken implements IPlayer, IAuto {
                     moviment[1] = MovimentsAmazona.get(m);
                     moviment[2] = casellesBuides.get(c);
 
-                    
                     // Es posible que en casos extremos no entre en 120 -> 123; eval nunca es mayor a alpha
                     int eval = Minimitzador(statusCopia, profunditat - 1, Alpha, Beta);
                     //System.out.println("EVAL / ALPHA: "+eval+" // "+Alpha);
@@ -130,18 +124,18 @@ public class FinalChicken implements IPlayer, IAuto {
 
                 }
             }
-           
+
         }
 
-        System.out.println("Origen: "+millorMoviment[0]);
-        System.out.println("Destino: "+millorMoviment[1]);
-        System.out.println("Fletxa: "+millorMoviment[1]);
-        
-        if(millorMoviment[0] == null){
+        System.out.println("Origen: " + millorMoviment[0]);
+        System.out.println("Destino: " + millorMoviment[1]);
+        System.out.println("Fletxa: " + millorMoviment[1]);
+
+        if (millorMoviment[0] == null) {
             //TODO: REVISAR AMB BERNAT; Tirada tonta quan tots els moviments son perdedors
             millorMoviment = moviment.clone();
         }
-        
+
         return new Move(millorMoviment[0], millorMoviment[1], millorMoviment[2], (int) this.nnodes, this.prof, SearchType.MINIMAX);
     }
 
@@ -159,17 +153,16 @@ public class FinalChicken implements IPlayer, IAuto {
         }
 
         // igual hay que cambiar el  4 luego !!!
-        for (int i = 0; i < 4  && (!this.timeout); i++) {
+        for (int i = 0; i < s.getNumberOfAmazonsForEachColor() && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
-            for (int m = 0; m < MovimentsAmazona.size()  && (!this.timeout); m++) {
+            for (int m = 0; m < MovimentsAmazona.size() && (!this.timeout); m++) {
 
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
-                for (int c = 0; c < casellesBuides.size()  && (!this.timeout); c++) {
+                for (int c = 0; c < casellesBuides.size() && (!this.timeout); c++) {
                     GameStatus statusCopia = new GameStatus(s);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
                     statusCopia.placeArrow(casellesBuides.get(c));
-
 
                     int eval = Math.max(Alpha, Minimitzador(statusCopia, Profunditat - 1, Alpha, Beta));
                     Alpha = Math.max(Alpha, eval);
@@ -221,27 +214,24 @@ public class FinalChicken implements IPlayer, IAuto {
         }
 
         // Evaluem si en aquesta columna no es pot afegir mes fitxes o hem arribat a la profunditat maxima de exploracio
-        
         // MIRAR SI HEMOS ACABADO EL TIMEOUT.
         if (Profunditat == 0 || this.timeout) {
             return getHeuristica(s, CellType.opposite(s.getCurrentPlayer()));                                 // Retornem la evaluacio heurisitca del taulell en aquesta situacio
         }
         // igual hay que cambiar el  4 luego !!!
-        for (int i = 0; i < 4  && (!this.timeout); i++) {
+        for (int i = 0; i < s.getNumberOfAmazonsForEachColor() && (!this.timeout); i++) {
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
-            for (int m = 0; m < MovimentsAmazona.size()  && (!this.timeout); m++) {
+            for (int m = 0; m < MovimentsAmazona.size() && (!this.timeout); m++) {
 
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
-                for (int c = 0; c < casellesBuides.size()  && (!this.timeout); c++) {
+                for (int c = 0; c < casellesBuides.size() && (!this.timeout); c++) {
                     GameStatus statusCopia = new GameStatus(s);
                     statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
 
                     statusCopia.placeArrow(casellesBuides.get(c));
 
                     // Posarem el millor moviment en una array 
-    
-
                     int eval = Math.min(Beta, Maximitzador(statusCopia, Profunditat - 1, Alpha, Beta));
                     Beta = Math.min(Beta, eval);
                     // Comprobem si beta es menor que Alpha, aixo indicara que per aquesta branca no cal seguir i retornem Beta com el minim exigible del arbre.
@@ -272,7 +262,7 @@ public class FinalChicken implements IPlayer, IAuto {
                 }
             }
         }
-        casellesBuides.add(s.getAmazon(s.getCurrentPlayer(),am));
+        casellesBuides.add(s.getAmazon(s.getCurrentPlayer(), am));
         return casellesBuides;
     }
 
@@ -283,68 +273,91 @@ public class FinalChicken implements IPlayer, IAuto {
 
         ArrayList<Point> MovimentsAmazona;
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < s.getNumberOfAmazonsForEachColor(); i++) {
             MovimentsAmazona = s.getAmazonMoves(s.getAmazon(color, i), false); // restricted 
             movPossibles += MovimentsAmazona.size();
+            
             MovimentsAmazona = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
             movPossiblesRival += MovimentsAmazona.size();
+            
+            Point maleante = new Point(s.getAmazon(CellType.opposite(color), i));
+            Point honorable = new Point(s.getAmazon(color, i));
+            int encontra = 0;
+            int afavor = 0;
+            for (int x = -1; x < 2; x++){
+                for (int y = -1; y<2; y++){
+                    if(x!=0 && y!=0){
+                        if(maleante.x+x>=0 && maleante.x+x<s.getSize() && maleante.y+y>=0 && maleante.y+y<s.getSize() && (s.getPos(maleante.x+x,maleante.y+y) != CellType.EMPTY)){
+                            ++afavor;
+                        }
+                        if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0 && honorable.y+y<s.getSize() && (s.getPos(honorable.x+x,honorable.y+y) != CellType.EMPTY)){
+                            ++encontra;
+                        }
+                    }
+                }
+            }
+            movPossibles += afavor;
+            movPossiblesRival += encontra;
         }
+        
+        
+        
         ++this.nnodes;
         return (movPossibles - movPossiblesRival);
     }
-    
+
     /**
      * Funció que s'encarrega de generar la taula de Zobrist
      */
-     private void generaTaulaHash(){
-         
-         for(int i = 0; i<10; i++)
-             for(int j = 0; j<10; j++)
-                 for(int k = 0; k<4; k++)
-                     this.zobristTable[i][j][k] = (long) Math.random();
-         
-     }
-     
-         /**
+    private void generaTaulaHash() {
+
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                for (int k = 0; k < 3; k++) {
+                    this.zobristTable[i][j][k] = (long) Math.random();
+                }
+            }
+        }
+    }
+
+    /**
      * Funció que s'encarrega de recalcular el hash del tauler
      */
-     private long RecalcularHash(GameStatus s){
-         long h = 0;
-         //TODO: Hacer variable el tamaño del tablero
-         for(int i = 0; i<9; i++){
-             for(int j = 0; j<9; j++){
-                 if(s.getPos(i, j) != CellType.EMPTY){
-                     CellType pieza = s.getPos(i, j);
-                     int n; //P1 = 0, P2 = 1, ARR = 2, EMPT = 3
-                     if (pieza == CellType.ARROW){
-                         n=this.creueta;
-                     }else if(pieza == CellType.PLAYER1){
-                         n=this.juga1;
-                     }else{
-                         n=this.juga2;
-                     }
-                     h ^= this.zobristTable[i][j][n];
-                 }
-             }
-         }
-         return h;   
-     }
-     
-     private int IndexDe(CellType a){
+    private long RecalcularHash(GameStatus s) {
+        long h = 0;
+        //TODO: Hacer variable el tamaño del tablero
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                if (s.getPos(i, j) != CellType.EMPTY) {
+                    CellType pieza = s.getPos(i, j);
+                    int n; //P1 = 0, P2 = 1, ARR = 2, EMPT = 3
+                    if (pieza == CellType.ARROW) {
+                        n = this.creueta;
+                    } else if (pieza == CellType.PLAYER1) {
+                        n = this.juga1;
+                    } else {
+                        n = this.juga2;
+                    }
+                    h ^= this.zobristTable[i][j][n];
+                }
+            }
+        }
+        return h;
+    }
+
+    private int IndexDe(CellType a) {
         int n;
-        if (a == CellType.PLAYER1){
-            n=this.juga1;
-        }else if(a == CellType.PLAYER2){
-            n=this.juga2;
-        }else if(a == CellType.ARROW){
-            n=this.creueta;
-        }else{
-            n=this.buit;
+        if (a == CellType.PLAYER1) {
+            n = this.juga1;
+        } else if (a == CellType.PLAYER2) {
+            n = this.juga2;
+        } else if (a == CellType.ARROW) {
+            n = this.creueta;
+        } else {
+            n = this.buit;
         }
         return n;
-     }
-    
-    
+    }
 
     /**
      * Ens avisa que hem de parar la cerca en curs perquè s'ha exhaurit el temps
