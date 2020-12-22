@@ -281,32 +281,46 @@ public class FinalChicken implements IPlayer, IAuto {
         int movPossiblesRival = 0;
 
         ArrayList<Point> MovimentsAmazona;
+        ArrayList<Point> MovimentsAmazonaEnemigues;
 
         for (int i = 0; i < s.getNumberOfAmazonsForEachColor(); i++) {
             MovimentsAmazona = s.getAmazonMoves(s.getAmazon(color, i), false); // restricted 
             movPossibles += MovimentsAmazona.size();
-            MovimentsAmazona = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
-            movPossiblesRival += MovimentsAmazona.size();
-            Point maleante = new Point(s.getAmazon(CellType.opposite(color), i));
-            Point honorable = new Point(s.getAmazon(color, i));
+            MovimentsAmazonaEnemigues = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
+            movPossiblesRival += MovimentsAmazonaEnemigues.size();
+            /**
             int encontra = 0;
             int afavor = 0;
-            for (int x = -1; x < 2; x++){
-                for (int y = -1; y<2; y++){
+            int x;
+            int y;
+            
+            
+            Point maleante = new Point(s.getAmazon(CellType.opposite(color), i));
+            Point honorable = new Point(s.getAmazon(color, i));
+            
+            for (x = -1; x < 2; x++){
+                for (y = -1; y<2; y++){
                     if(maleante.x+x>=0 && maleante.x+x<s.getSize() && maleante.y+y>=0 && maleante.y+y<s.getSize() && (s.getPos(maleante.x+x,maleante.y+y) != CellType.EMPTY) && (s.getPos(maleante.x+x,maleante.y+y) != CellType.opposite(color))){
                         ++afavor;
                     }
-                    if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0 && honorable.y+y<s.getSize() && (s.getPos(honorable.x+x,honorable.y+y) != CellType.EMPTY) && (s.getPos(honorable.x+x,honorable.y+y) != CellType.opposite(color))){
+                    if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0 && honorable.y+y<s.getSize() && (s.getPos(honorable.x+x,honorable.y+y) != CellType.EMPTY) && (s.getPos(honorable.x+x,honorable.y+y) != color)){
                         ++encontra;
                     }
+
                 }
             }
-//            if(afavor==8){
+            if(maleante.x == 0 || maleante.x == s.getSize()-1 || maleante.y == 0 || maleante.y == s.getSize()-1)
+                afavor +=3;
+            if(honorable.x == 0 || honorable.x == s.getSize()-1 || honorable.y == 0 || honorable.y == s.getSize()-1)
+                encontra += 3;
+                            
+            
+            //if(afavor==9)
                 //System.out.println("se me va la pinza: "+maleante.x+" "+maleante.y);
-                //movPossibles += afavor*2;
+                //movPossibles += afavor*2;**/
 //            }
-            movPossibles += Math.pow(2, afavor);
-            movPossiblesRival += Math.pow(2, encontra);
+            //movPossibles += Math.pow(2, afavor);
+            //movPossiblesRival += Math.pow(2, encontra);
             
             
             //System.out.println("ficha ENEMIGA("+i+") encontra por "+afavor+" : ("+ maleante.x+" "+maleante.y+")");
