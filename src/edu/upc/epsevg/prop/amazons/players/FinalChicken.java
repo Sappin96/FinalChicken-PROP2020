@@ -19,35 +19,63 @@ import java.util.Random;
 
 /**
  *
- * @author bernat
+ * @author Adrià Tort i Achraf Hmimou
  */
 public class FinalChicken implements IPlayer, IAuto {
 
     String name;
+
     // profunditat
     int prof;
+    boolean profunditatIterada;
     boolean timeout;
-    long nnodes;
-    long[][][] zobristTable;
-    int juga1 = 0;
-    int juga2 = 1;
-    int creueta = 2;
-    int buit = 3;
 
+    // numero de nodes
+    long nnodes;
+
+    // taula de zobrist per representar al taulell
+    long[][][] zobristTable;
+
+    /**
+     * Constructor buit. En aquest cas la profundització es farà de forma
+     * iterada.
+     */
     public FinalChicken() {
         this.name = "FinalChicken";
-        this.prof = 1;
+
+        // Com que no s'ha pasat cap parametre la profunditat es realitzarà de forma iterada fins a un timeout.
+        this.profunditatIterada = true;
         this.timeout = false;
         this.nnodes = 0;
-        this.zobristTable = new long[10][10][4];
 
+        // inicialització i generació de la taula zobrist
+        this.zobristTable = new long[10][10][3];
         generaTaulaHash();
-
     }
 
     /**
-     * Decideix el moviment del jugador donat un tauler i un color de peça que
-     * ha de posar.
+     * Constructor parametritzat amb una profunditat determinada.
+     *
+     * @param profunditat El valor de la profunditat haurà de ser > 0
+     */
+    public FinalChicken(int profunditat) {
+        this.name = "FinalChicken";
+
+        // En quest cas la profunditat serà fixa, no iterada.
+        this.profunditatIterada = false;
+        this.prof = profunditat;
+        this.timeout = false;
+
+        this.nnodes = 0;
+
+        // inicialització i generació de la taula zobrist
+        this.zobristTable = new long[10][10][3];
+        generaTaulaHash();
+    }
+
+    /**
+     * Decideix el moviment donat un estat del taulell.
+     *
      *
      * @param s Tauler i estat actual de joc.
      * @return el moviment que fa el jugador.
@@ -55,96 +83,125 @@ public class FinalChicken implements IPlayer, IAuto {
     @Override
     public Move move(GameStatus s) {
 
+        // Inicialitzem sempre el timeout a false per cada moviment.
         this.timeout = false;
-        this.prof = 1;
-        // ITERATIVE DEEPING:
-        // ---
-        // Poner el timeout y devolver en las funciones MINIMIZADOR I MAXIMIZADOR EN EL CASO BASE.
 
-        // IMPLEMENTAR TIMEOUT
-        // HASHING:
-        // MEJORAR HAURSTICA:
-        // DOCUMENTACION
-        Move m = new Move(new Point(), new Point(), new Point(), 0, 0, SearchType.RANDOM);
-        Move mAnterior = new Move(new Point(), new Point(), new Point(), 0, 0, SearchType.RANDOM);
-        while (!timeout) {
-            mAnterior = new Move(m.getAmazonFrom(), m.getAmazonTo(), m.getArrowTo(), (int) m.getNumerOfNodesExplored(), m.getMaxDepthReached(), m.getSearchType());
-            Move t = movimentProfunditat(s);
-            m = new Move(t.getAmazonFrom(), t.getAmazonTo(), t.getArrowTo(), (int) t.getNumerOfNodesExplored(), t.getMaxDepthReached(), t.getSearchType());
-            ++this.prof;
+        // en m tindrem el moviment actual i en mAnterior tindrem el moviment anterior en cas de que hi hagi timout i la variable m estigui a null.
+        Move m = null;
+        Move mAnterior = null;
+
+        //En cas de que la profunditat sigui iterada 
+        if (profunditatIterada) {
+            //comencarem amb una profunditat = 1
+            this.prof = 1;
+            // mentre no hi hagi timout
+            while (!this.timeout) {
+
+                // Ens guardaem sempre el moviment anterior 
+                if (m != null) {
+                    mAnterior = new Move(m.getAmazonFrom(), m.getAmazonTo(), m.getArrowTo(), (int) m.getNumerOfNodesExplored(), m.getMaxDepthReached(), m.getSearchType());
+                }
+
+                //Calcularem el moviment actual donat l'estat i la profunditat fixada
+                m = movimentProfunditat(s);
+
+                //Augmentem la profunditat en una unitat
+                ++this.prof;
+            }
+        } // En cas de que la profunditat sigui fixada
+        else {
+            // Retornem el millor moviment fins a la profunditat fixada al constructor.
+            m = movimentProfunditat(s);
         }
-<<<<<<< HEAD
 
+        // En cas de que no s'hagi calculat correctament el moviment degut al timeout, retornarem el moviment anterior. Sino retornarem el moviment actual.
         if (m.getAmazonFrom() == null) {
-            System.out.println("mAnterior");
-=======
-        
-        if(m.getAmazonFrom()==null)
-        {
-            //System.out.println("mAnterior");
->>>>>>> e34d2d077f0a19cc3f034337e8d9afc421415145
             return mAnterior;
         } else {
             return m;
         }
     }
-<<<<<<< HEAD
 
+    /**
+     * Funcio que retorna el millor moviment trobat fins a una profunditat
+     * determinada donat un estat del taulell utilitzant l'algorisme minimax.
+     *
+     * El que fem en aquesta funció es preparar les podes alfa i beta amb els
+     * seus valors i la profunidat a la que arribarem (com a maxim). Despres
+     * generarem totes les combinacions de moviments possibles i realitzarem el
+     * minimax assegurant tenint sempre a la variable millorMoviment el moviment
+     * més prometedor.
+     *
+     *
+     * @param s estat determinat del taulell.
+     * @return millor moviment fins a una profunditat determinada.
+     */
     private Move movimentProfunditat(GameStatus s) {
 
+        // reinicialitzzem cada vegada el numero de nodes que explorarem durant la crida del minimax.
+        this.nnodes = 0;
         int Alpha = Integer.MIN_VALUE;
         int Beta = Integer.MAX_VALUE;
-        int profunditat = this.prof;
-        this.nnodes = 0;
-       // long hash = RecalcularHash(s);
 
-=======
-    
-    private Move movimentProfunditat(GameStatus s){
-        this.nnodes = 0;
-        int Alpha = Integer.MIN_VALUE;
-        int Beta = Integer.MAX_VALUE;
+        // fixem la profunditat maxima que ens vindra donada desde el constructor parametritzat o de forma iterada desde la funcio Move.
         int profunditat = this.prof;
+
+        // Aprofitem per calcular el valor del hash en el estat actual del taulell.
         //long hash = RecalcularHash(s);
-        
->>>>>>> e34d2d077f0a19cc3f034337e8d9afc421415145
-        // Posarem el millor Moviment en una array on el primer element es el punt on es trobla  l'amazona i el segon on mourem l'amazona i el tercer on colocarem la fletxa.
+        // Posarem el millor Moviment en una array on el primer element es el punt on es trobla l'amazona i el segon on mourem l'amazona i el tercer on colocarem la fletxa.
         Point[] millorMoviment = new Point[3];
+
+        // També ens fa falta una array on guardarem els valors per cada moviment realitzat 
         Point[] moviment = new Point[3];
 
+        // Per cada amazona del jugador
         for (int i = 0; i < s.getNumberOfAmazonsForEachColor() && (!this.timeout); i++) {
+
+            // Mirarem quins son els seus moviments possibles
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted == si es false revisa todas las posiciones, si es true solo las limite.
             for (int m = 0; m < MovimentsAmazona.size(); m++) { //Quitado timeout
 
+                // Per cada moviment possible, mirarem quines son les caselles en las que podria posar una fletxa.
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
+                // Per cada casella on podem posar la fletxa, generarem un estat del taulell.
                 for (int c = 0; c < casellesBuides.size(); c++) { //quitado timeout
+
+                    // Fem una copia del taulell on realitzarem els moviments.
                     GameStatus statusCopia = new GameStatus(s);
-<<<<<<< HEAD
-                   // hash ^= this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))];
-                   // System.out.println(this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))]);
-                    statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
-                   // hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][this.buit];
-=======
-                    //hash ^= this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))];
-                    //System.out.println(this.zobristTable[statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).x][statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i).y][IndexDe(statusCopia.getPos(statusCopia.getAmazon(statusCopia.getCurrentPlayer(), i)))]);
-                    statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
-                    //hash ^= this.zobristTable[MovimentsAmazona.get(m).x][MovimentsAmazona.get(m).y][this.buit];
->>>>>>> e34d2d077f0a19cc3f034337e8d9afc421415145
-                    //System.out.println(hash);
-                    statusCopia.placeArrow(casellesBuides.get(c));
 
-                    // Posarem el millor moviment en una array 
-                    moviment[0] = s.getAmazon(s.getCurrentPlayer(), i);
-                    moviment[1] = MovimentsAmazona.get(m);
-                    moviment[2] = casellesBuides.get(c);
+                    // Posicio on estroba la Amazona.
+                    Point origen = s.getAmazon(s.getCurrentPlayer(), i);
 
-                    // Es posible que en casos extremos no entre en 120 -> 123; eval nunca es mayor a alpha
+                    // Posicio on mourem la Amazona.
+                    Point desti = MovimentsAmazona.get(m);
+
+                    // Posicio on posarem la fletxa.
+                    Point fletxa = casellesBuides.get(c);
+
+                    // Sobre l'estat copia del taulell que hem realitzem abans farem el moviment.
+                    statusCopia.moveAmazon(origen, desti);
+                    statusCopia.placeArrow(fletxa);
+//                    
+                    // Aprofitem per fer les diferents xors per obtenir el valor hash despres de haber fet el moviment complet.
+
+//                    hash ^= this.zobristTable[origen.x][origen.y][s.getCurrentPlayer().ordinal() - 1];
+//                    hash ^= this.zobristTable[desti.x][desti.y][s.getCurrentPlayer().ordinal() - 1];
+//                    hash ^= this.zobristTable[fletxa.x][fletxa.y][CellType.ARROW.ordinal() - 1];
+                    // Posarem el moviment en una array 
+                    moviment[0] = origen;
+                    moviment[1] = desti;
+                    moviment[2] = fletxa;
+
+                    // Ara cridarem al minimitzador amb l'estat on hem fet el moviment 
                     int eval = Minimitzador(statusCopia, profunditat - 1, Alpha, Beta);
-                    //System.out.println("EVAL / ALPHA: "+eval+" // "+Alpha);
+
+                    // En cas de que sigui la millor heuristica trobada fins ara 
                     if (eval > Alpha) {
-                        millorMoviment = moviment.clone();                              // guardarem la columna com a millorMoviment fins que un altre doni millor heuristica 
-                        Alpha = eval;                                           // actualitzem Alfa amb la millor heurisitica que hem trobat de moment.
+                        // guardarem la columna com a millorMoviment fins que un altre doni millor heuristica 
+                        millorMoviment = moviment.clone();
+                        // actualitzem Alfa amb la millor heurisitica que hem trobat de moment.
+                        Alpha = eval;
                     }
 
                 }
@@ -152,55 +209,71 @@ public class FinalChicken implements IPlayer, IAuto {
 
         }
 
-<<<<<<< HEAD
-        System.out.println("Origen: " + millorMoviment[0]);
-        System.out.println("Destino: " + millorMoviment[1]);
-        System.out.println("Fletxa: " + millorMoviment[1]);
-
+        // Aquest cas es dona quan tots els nodes explorats donan com heuristica -Infinit, per tant tots els moviments son perdedors i farem un moviments qualsevol perque ja hem perdut.
         if (millorMoviment[0] == null) {
-=======
-        //System.out.println("Origen: "+millorMoviment[0]);
-        //System.out.println("Destino: "+millorMoviment[1]);
-        //System.out.println("Fletxa: "+millorMoviment[1]);
-        
-        if(millorMoviment[0] == null){
->>>>>>> e34d2d077f0a19cc3f034337e8d9afc421415145
-            //TODO: REVISAR AMB BERNAT; Tirada tonta quan tots els moviments son perdedors
             millorMoviment = moviment.clone();
         }
 
+        // Retornem el objecte Move que també conte tota la informació obtinguda durant la exploracio.
         return new Move(millorMoviment[0], millorMoviment[1], millorMoviment[2], (int) this.nnodes, this.prof, SearchType.MINIMAX);
     }
 
+    /**
+     * Funció que s'encarrega d'establir la capa Maximitzadora on ha de retornar
+     * el valor heuristic maxim obtingut d'evaluar tots els estats fills del
+     * estat donat.
+     *
+     * @param s Estat determinat del taulell
+     * @param Profunditat Profunditat maxima actual
+     * @param Alpha Es tracta del valor que contindra el maxim heuristic actual
+     * en les diferents crides.
+     * @param Beta Es tracta del valor que contindra el minim exigible en les
+     * diferents crides
+     * @return retornarem la heuristica maxima obtinguda de evaluar als fills
+     * del estat.
+     */
     private int Maximitzador(GameStatus s, int Profunditat, int Alpha, int Beta) {
 
-        // En cas de ser solucio, hem perdut. Vol dir que el ultim moviment (rival) ens ha guanyat.
-        //  if(t.solucio(Columna, -color)) return Integer.MIN_VALUE;
+        // En cas de que en aquest estat el tinguem un guanyador i sugi el rival, hem perdut per tant retornem -infinit
         if (s.GetWinner() == CellType.opposite(s.getCurrentPlayer())) {
             return Integer.MIN_VALUE;
         }
 
-        // Evaluem si en aquesta columna no es pot afegir mes fitxes o hem arribat a la profunditat maxima de exploracio
+        // Evaluem si en aquesta columna no es pot afegir mes fitxes o hem arribat a la profunditat maxima de exploracio. També mirarem si hi ha timout.
         if (Profunditat == 0 || this.timeout) {
             return -1 * getHeuristica(s, CellType.opposite(s.getCurrentPlayer()));                                 // Retornem la evaluacio heurisitca del taulell en aquesta situacio
         }
 
-        // igual hay que cambiar el  4 luego !!!
-<<<<<<< HEAD
+        // Per cada amazona del jugador
         for (int i = 0; i < s.getNumberOfAmazonsForEachColor() && (!this.timeout); i++) {
-=======
-        for (int i = 0; i < s.getNumberOfAmazonsForEachColor()  && (!this.timeout); i++) {
->>>>>>> e34d2d077f0a19cc3f034337e8d9afc421415145
+
+            // Mirarem quins son els seus moviments possibles
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
             for (int m = 0; m < MovimentsAmazona.size() && (!this.timeout); m++) {
 
+                // Per cada moviment possible, mirarem quines son les caselles en las que podria posar una fletxa.
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
+                // Per cada casella on podem posar la fletxa, generarem un estat del taulell.
                 for (int c = 0; c < casellesBuides.size() && (!this.timeout); c++) {
-                    GameStatus statusCopia = new GameStatus(s);
-                    statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
-                    statusCopia.placeArrow(casellesBuides.get(c));
 
+                    // Fem una copia del taulell on realitzarem els moviments.
+                    GameStatus statusCopia = new GameStatus(s);
+
+                    // Posicio on estroba la Amazona.
+                    Point origen = s.getAmazon(s.getCurrentPlayer(), i);
+
+                    // Posicio on mourem la Amazona.
+                    Point desti = MovimentsAmazona.get(m);
+
+                    // Posicio on posarem la fletxa.
+                    Point fletxa = casellesBuides.get(c);
+
+                    // Sobre l'estat copia del taulell que hem realitzem abans farem el moviment.
+                    statusCopia.moveAmazon(origen, desti);
+                    statusCopia.placeArrow(fletxa);
+
+                    // Cridarem a la evaluacio que fa el minimitzador amb una profunditat major.
                     int eval = Math.max(Alpha, Minimitzador(statusCopia, Profunditat - 1, Alpha, Beta));
                     Alpha = Math.max(Alpha, eval);
                     // Comprobem si beta es menor que Alpha, aixo indicara que per aquesta branca no cal seguir i retornem Beta com el minim exigible del arbre.
@@ -214,33 +287,18 @@ public class FinalChicken implements IPlayer, IAuto {
     }
 
     /**
-     * Funcio que s'encarrega de establir la capa minimitzadora del algorisme i
-     * obtenir la jugada amb pitjor heurisitca
+     * Funcio que s'encarrega de establir la capa Minimitzadora don ha de
+     * retornar el valor heuristic minim obtingut d'evaluar tots els estats
+     * fills del estat donat.
      *
-     * <p>
-     * La funcio el que fa es iterar sobre els diferents moviments possibles i
-     * obtenir la heurisitca minima obtinguda de compararlos tots.</p>
-     *
-     * <p>
-     * El que es fa es principalment es valorar el cas base que es mirar si el
-     * ultim moviment es perdedor, si es el cas retornem infinit ja que aixo
-     * indica que hem guanyat. Un altre cas base eque es mirar si hem arribat a
-     * la profunidat maxima o no hi ha moviment possible, en aquest cas mirarem
-     * la heurisitca per aquell estan en concret. Finalment el cas recursiu es
-     * iterar sobre els diferents moviments possibles i quedarnos amb la
-     * heuristica minima de tots ells. </p>
-     *
-     *
-     * @param t Es un objecte tipus taulell que correspon al ultim estat del
-     * taulell.
-     * @param color Es tracta de quin jugador li toca jugar... Si es 1 ets tu
-     * mateix i si es -1 es el rival.
+     * @param s Estat determinat del taulell
+     * @param Profunditat Profunditat maxima actual
      * @param Alpha Es tracta del valor que contindra el maxim exigible
      * heuristic actual en les diferents crides.
      * @param Beta Es tracta del valor que contindra el minim en les diferents
      * crides
-     * @return Es tracta de retornar la columna que correspon a la heuristica
-     * minima.
+     * @return retornarem la heuristica minima obtinguda de evaluar als fills
+     * del estat.
      */
     private int Minimitzador(GameStatus s, int Profunditat, int Alpha, int Beta) {
 
@@ -255,27 +313,40 @@ public class FinalChicken implements IPlayer, IAuto {
         if (Profunditat == 0 || this.timeout) {
             return getHeuristica(s, CellType.opposite(s.getCurrentPlayer()));                                 // Retornem la evaluacio heurisitca del taulell en aquesta situacio
         }
-        // igual hay que cambiar el  4 luego !!!
-<<<<<<< HEAD
+
+        // Per cada amazona del jugador
         for (int i = 0; i < s.getNumberOfAmazonsForEachColor() && (!this.timeout); i++) {
-=======
-        for (int i = 0; i < s.getNumberOfAmazonsForEachColor()  && (!this.timeout); i++) {
->>>>>>> e34d2d077f0a19cc3f034337e8d9afc421415145
+
+            // Mirarem quins son els seus moviments possibles
             ArrayList<Point> MovimentsAmazona = s.getAmazonMoves(s.getAmazon(s.getCurrentPlayer(), i), false); // restricted ???
             for (int m = 0; m < MovimentsAmazona.size() && (!this.timeout); m++) {
 
+                // Per cada moviment possible, mirarem quines son les caselles en las que podria posar una fletxa.
                 LinkedList<Point> casellesBuides = casellasDisponibles(s, i, MovimentsAmazona.get(m));
 
+                // Per cada casella on podem posar la fletxa, generarem un estat del taulell.
                 for (int c = 0; c < casellesBuides.size() && (!this.timeout); c++) {
+
+                    // Fem una copia del taulell on realitzarem els moviments.
                     GameStatus statusCopia = new GameStatus(s);
-                    statusCopia.moveAmazon(s.getAmazon(s.getCurrentPlayer(), i), MovimentsAmazona.get(m));
 
-                    statusCopia.placeArrow(casellesBuides.get(c));
+                    // Posicio on estroba la Amazona.
+                    Point origen = s.getAmazon(s.getCurrentPlayer(), i);
 
-                    // Posarem el millor moviment en una array 
+                    // Posicio on mourem la Amazona.
+                    Point desti = MovimentsAmazona.get(m);
+
+                    // Posicio on posarem la fletxa.
+                    Point fletxa = casellesBuides.get(c);
+
+                    // Sobre l'estat copia del taulell que hem realitzem abans farem el moviment.
+                    statusCopia.moveAmazon(origen, desti);
+                    statusCopia.placeArrow(fletxa);
+
+                    // Cridarem a la evaluacio que fa el maximitzador amb una profunditat major.
                     int eval = Math.min(Beta, Maximitzador(statusCopia, Profunditat - 1, Alpha, Beta));
                     Beta = Math.min(Beta, eval);
-                    // Comprobem si beta es menor que Alpha, aixo indicara que per aquesta branca no cal seguir i retornem Beta com el minim exigible del arbre.
+                    // Comprobem si beta es menor que Alpha, aixo indicara que per aquesta branca no cal seguir i retornem Alpha com el maxim exigible del arbre.
                     if (Beta <= Alpha) {
                         return Alpha;
                     }
@@ -283,176 +354,244 @@ public class FinalChicken implements IPlayer, IAuto {
             }
 
         }
-        return Beta;   // Retornem Alpha que sera el valor heuristic maxim obtingut del proces.
+        return Beta;   // Retornem Beta que sera el valor heuristic minim obtingut del proces.
     }
 
     /**
      * Funció que ens reitorna una llista amb totes les caselles buides del
-     * taulell
+     * taulell despres de moure una Amazona
+     *
+     * @param s Estat del taulel determinat
+     * @param am Representa el integer que ens diu quina amazona sera
+     * @param FIN Representa la posicio on mourem l'amazona.
+     * @return retornem una llista amb totes les posicions buides del taulell on
+     * potencialment podem posar una fletxa
      */
     private LinkedList<Point> casellasDisponibles(GameStatus s, int am, Point FIN) {
 
         LinkedList<Point> casellesBuides = new LinkedList<Point>();
 
-        Point peca;
+        Point posicio;
         for (int i = 0; i < s.getSize(); i++) {
             for (int j = 0; j < s.getSize(); j++) {
-                peca = new Point(i, j);
-                if ((s.getPos(i, j) == CellType.EMPTY) && (!peca.equals(FIN))) {
-                    casellesBuides.add(peca);
+                posicio = new Point(i, j);
+                // Si es una peca buida i no es la posicio on mourem l'amazona sera considerada com a disponible.
+                if ((s.getPos(i, j) == CellType.EMPTY) && (!posicio.equals(FIN))) {
+                    casellesBuides.add(posicio);
                 }
             }
         }
+        // Finalment afegim la posicio inical de l'amazona abans de fer el moviment ja que una vegada fet el moviment quedara buida.
         casellesBuides.add(s.getAmazon(s.getCurrentPlayer(), am));
         return casellesBuides;
     }
 
     public int getHeuristica(GameStatus s, CellType color) {
 
-        int movPossibles = 0;
-        int movPossiblesRival = 0;
-
-        ArrayList<Point> MovimentsAmazona;
-        ArrayList<Point> MovimentsAmazonaEnemigues;
+        int puntuacio = 0;
+        int puntuacioRival = 0;
 
         for (int i = 0; i < s.getNumberOfAmazonsForEachColor(); i++) {
-            MovimentsAmazona = s.getAmazonMoves(s.getAmazon(color, i), false); // restricted 
-            movPossibles += MovimentsAmazona.size();
-<<<<<<< HEAD
-            
-            MovimentsAmazona = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
-            movPossiblesRival += MovimentsAmazona.size();
-            
-            Point maleante = new Point(s.getAmazon(CellType.opposite(color), i));
-            Point honorable = new Point(s.getAmazon(color, i));
-            int encontra = 0;
-            int afavor = 0;
-            for (int x = -1; x < 2; x++){
-                for (int y = -1; y<2; y++){
-                    if(x!=0 && y!=0){
-                        if(maleante.x+x>=0 && maleante.x+x<s.getSize() && maleante.y+y>=0 && maleante.y+y<s.getSize() && (s.getPos(maleante.x+x,maleante.y+y) != CellType.EMPTY)){
-                            ++afavor;
-                        }
-                        if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0 && honorable.y+y<s.getSize() && (s.getPos(honorable.x+x,honorable.y+y) != CellType.EMPTY)){
-                            ++encontra;
-                        }
-                    }
-                }
-            }
-            movPossibles += afavor;
-            movPossiblesRival += encontra;
-=======
-            MovimentsAmazonaEnemigues = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
-            movPossiblesRival += MovimentsAmazonaEnemigues.size();
-            /**
-            int encontra = 0;
-            int afavor = 0;
-            int x;
-            int y;
-            
-            
-            Point maleante = new Point(s.getAmazon(CellType.opposite(color), i));
-            Point honorable = new Point(s.getAmazon(color, i));
-            
-            for (x = -1; x < 2; x++){
-                for (y = -1; y<2; y++){
-                    if(maleante.x+x>=0 && maleante.x+x<s.getSize() && maleante.y+y>=0 && maleante.y+y<s.getSize() && (s.getPos(maleante.x+x,maleante.y+y) != CellType.EMPTY) && (s.getPos(maleante.x+x,maleante.y+y) != CellType.opposite(color))){
-                        ++afavor;
-                    }
-                    if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0 && honorable.y+y<s.getSize() && (s.getPos(honorable.x+x,honorable.y+y) != CellType.EMPTY) && (s.getPos(honorable.x+x,honorable.y+y) != color)){
-                        ++encontra;
-                    }
+            Point Amazona = s.getAmazon(color, i);
+            ArrayList< ArrayList<Point>> taulaTerritori = new ArrayList< ArrayList<Point>>();
 
-                }
-            }
-            if(maleante.x == 0 || maleante.x == s.getSize()-1 || maleante.y == 0 || maleante.y == s.getSize()-1)
-                afavor +=3;
-            if(honorable.x == 0 || honorable.x == s.getSize()-1 || honorable.y == 0 || honorable.y == s.getSize()-1)
-                encontra += 3;
-                            
-            
-            //if(afavor==9)
-                //System.out.println("se me va la pinza: "+maleante.x+" "+maleante.y);
-                //movPossibles += afavor*2;**/
-//            }
-            //movPossibles += Math.pow(2, afavor);
-            //movPossiblesRival += Math.pow(2, encontra);
+            int nMovimentsPerPosicio = 1;
+            int taulellComplet = s.getEmptyCellsCount();
+            int nElementTerritori = 0;
+
+            puntuacio += evaluaTerritori(s, taulaTerritori, Amazona, nMovimentsPerPosicio, taulellComplet, nElementTerritori);
             
             
-            //System.out.println("ficha ENEMIGA("+i+") encontra por "+afavor+" : ("+ maleante.x+" "+maleante.y+")");
-            //System.out.println("ficha AMIGA("+i+") encontra por "+encontra+" : ("+ honorable.x+" "+honorable.y+")");
-            //System.out.println(s.toString());
->>>>>>> e34d2d077f0a19cc3f034337e8d9afc421415145
+            Point AmazonaRival = s.getAmazon(CellType.opposite(color), i);
+            
+            taulaTerritori = new ArrayList< ArrayList<Point>>();
+
+            nMovimentsPerPosicio = 1;
+         
+            nElementTerritori = 0;
+
+            puntuacioRival += evaluaTerritori(s, taulaTerritori, AmazonaRival, nMovimentsPerPosicio, taulellComplet, nElementTerritori);
+            
+
         }
-        
-        
-        
+
+//        int movPossibles = 0;
+//        int movPossiblesRival = 0;
+//
+//        ArrayList<Point> MovimentsAmazona;
+//        ArrayList<Point> MovimentsAmazonaEnemigues;
+//
+//        for (int i = 0; i < s.getNumberOfAmazonsForEachColor(); i++) {
+//            MovimentsAmazona = s.getAmazonMoves(s.getAmazon(color, i), false); // restricted 
+//            movPossibles += MovimentsAmazona.size();
+//            MovimentsAmazonaEnemigues = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
+//            movPossiblesRival += MovimentsAmazonaEnemigues.size();
+//            
+        /**
+         * int encontra = 0; int afavor = 0; int x; int y;
+         *
+         *
+         * Point maleante = new Point(s.getAmazon(CellType.opposite(color), i));
+         * Point honorable = new Point(s.getAmazon(color, i));
+         *
+         * for (x = -1; x < 2; x++){ for (y = -1; y<2; y++){
+         * if(maleante.x+x>=0 && maleante.x+x<s.getSize() && maleante.y+y>=0 && maleante.y+y<s.getSize() && (s.getPos(maleante.x+x,maleante.y+y) != CellType.EMPTY) && (s.getPos(maleante.x+x,maleante.y+y) != CellType.opposite(color))){
+         * ++afavor;
+         * }
+         * if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0
+         * && honorable.y+y<s.getSize() &&
+         * (s.getPos(honorable.x+x,honorable.y+y) != CellType.EMPTY) &&
+         * (s.getPos(honorable.x+x,honorable.y+y) != color)){ ++encontra; }
+         *
+         * }
+         * }
+         * if(maleante.x == 0 || maleante.x == s.getSize()-1 || maleante.y == 0
+         * || maleante.y == s.getSize()-1) afavor +=3; if(honorable.x == 0 ||
+         * honorable.x == s.getSize()-1 || honorable.y == 0 || honorable.y ==
+         * s.getSize()-1) encontra += 3;
+         *
+         *
+         * //if(afavor==9) //System.out.println("se me va la pinza:
+         * "+maleante.x+" "+maleante.y); //movPossibles += afavor*2;*
+         */
+//            }
+        //movPossibles += Math.pow(2, afavor);
+        //movPossiblesRival += Math.pow(2, encontra);
+        //System.out.println("ficha ENEMIGA("+i+") encontra por "+afavor+" : ("+ maleante.x+" "+maleante.y+")");
+        //System.out.println("ficha AMIGA("+i+") encontra por "+encontra+" : ("+ honorable.x+" "+honorable.y+")");
+        //System.out.println(s.toString());
+        //}
         ++this.nnodes;
-        return (movPossibles - movPossiblesRival);
+        return (puntuacio - puntuacioRival);
     }
 
+    private int evaluaTerritori(GameStatus s, ArrayList<ArrayList<Point>> taulaTerritori, Point Amazona, int nMovimentsPerPosicio, int taulellCompleta, int nElementTerritori) {
+
+        
+        while (nElementTerritori < taulellCompleta) {
+        
+            if (nMovimentsPerPosicio == 1) {
+                ArrayList<Point> moviments = s.getAmazonMoves(Amazona, false);
+                taulaTerritori.add(moviments);
+                nElementTerritori += moviments.size();
+                if(moviments.size() == 0)
+                    break;
+            } 
+            
+            else if (nMovimentsPerPosicio > 1) {
+                taulaTerritori.add(new ArrayList());
+                for (int i = 0; i < taulaTerritori.get(nMovimentsPerPosicio - 2).size() && nElementTerritori < taulellCompleta; i++) {
+                    Point posicio = taulaTerritori.get(nMovimentsPerPosicio - 2).get(i);
+                    ArrayList<Point> moviments = obtenirMovimentsDisponibles(s, posicio);
+
+                    for (int m = 0; m < moviments.size() && nElementTerritori < taulellCompleta; m++) {
+                        if (!taulaTerritori.get(nMovimentsPerPosicio - 2).contains(moviments.get(m))) {
+                            taulaTerritori.get(nMovimentsPerPosicio - 1).add(moviments.get(m));
+                            nElementTerritori++;
+                        }
+                    }
+                }
+            }
+            
+           // System.out.println("nElementTErriotri"+nElementTerritori);
+            
+            ++nMovimentsPerPosicio;
+        }
+        
+        int evaluacio = 0;
+        
+        for(int e = 1; e <= taulaTerritori.size(); e++)
+        {
+            evaluacio += e * taulaTerritori.get(e-1).size();
+        }
+        return evaluacio;
+    }
+    
+    private ArrayList<Point> obtenirMovimentsDisponibles(GameStatus s, Point Posicio)
+    {
+        ArrayList<Point> MovimentsDisponibles = new ArrayList<Point>();
+        
+        ArrayList<Point> dir = new ArrayList<Point>();
+        
+        for (int i = -1; i < 2; i++)
+        {
+            for(int j = -1; j<2; j++){
+                if(!(i == 0 && j == 0))
+                    dir.add(new Point(i,j));
+            }
+        }
+        
+        for(int i = 0; i<dir.size(); i++)
+        {
+           int posX = Posicio.x + dir.get(i).x;
+           int posY = Posicio.y + dir.get(i).y;
+           
+           while((posX>0 && posX<s.getSize()) && (posY>0 && posY<s.getSize()) && s.getPos(posX, posY) == CellType.EMPTY)
+           {
+               MovimentsDisponibles.add(new Point(posX, posY));
+               posX+=dir.get(i).x;
+               posY+=dir.get(i).y;
+               
+           }
+        }
+       return MovimentsDisponibles;   
+    }
+    
+    
+    
+
     /**
-     * Funció que s'encarrega de generar la taula de Zobrist
+     * Funció que s'encarrega de generar la taula de Zobrist que representarà
+     * totes les configuracions del taulell.
+     *
      */
     private void generaTaulaHash() {
 
+        Random rand = new Random();
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 for (int k = 0; k < 3; k++) {
-                    this.zobristTable[i][j][k] = (long) Math.random();
+                    this.zobristTable[i][j][k] = rand.nextLong();
                 }
             }
         }
     }
 
     /**
-     * Funció que s'encarrega de recalcular el hash del tauler
+     * Funció que itera sobre tot el taulell i retorna el valor hash que
+     * representa l'estat del tauell.
+     *
+     * @param s Estat determinat del taulell
+     * @return Retorna el valor hash obtingut que representa el estat del
+     * taulell.
      */
     private long RecalcularHash(GameStatus s) {
         long h = 0;
         //TODO: Hacer variable el tamaño del tablero
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                // Anirem fent acomuladament ela operació xor entre totes les peces no buides del tauell.
                 if (s.getPos(i, j) != CellType.EMPTY) {
                     CellType pieza = s.getPos(i, j);
-                    int n; //P1 = 0, P2 = 1, ARR = 2, EMPT = 3
-                    if (pieza == CellType.ARROW) {
-                        n = this.creueta;
-                    } else if (pieza == CellType.PLAYER1) {
-                        n = this.juga1;
-                    } else {
-                        n = this.juga2;
-                    }
-                    h ^= this.zobristTable[i][j][n];
+                    h ^= this.zobristTable[i][j][pieza.ordinal() - 1];
                 }
             }
         }
         return h;
     }
 
-    private int IndexDe(CellType a) {
-        int n;
-        if (a == CellType.PLAYER1) {
-            n = this.juga1;
-        } else if (a == CellType.PLAYER2) {
-            n = this.juga2;
-        } else if (a == CellType.ARROW) {
-            n = this.creueta;
-        } else {
-            n = this.buit;
-        }
-        return n;
-    }
-
     /**
-     * Ens avisa que hem de parar la cerca en curs perquè s'ha exhaurit el temps
-     * de joc.
+     * Funció que ens avisa que hem de parar la cerca en curs perquè s'ha
+     * exhaurit el temps de joc.
      */
     @Override
     public void timeout() {
         // Bah! Humans do not enjoy timeouts, oh, poor beasts !
-        this.timeout = true;
-        //System.out.println("Bah! You are so slow...");
+
+        // En cas de que la profunditat sigui iterada activarem el timeout.
+        if (profunditatIterada) {
+            this.timeout = true;
+        }
     }
 
     /**
