@@ -24,7 +24,11 @@ public class Amazons {
                 IPlayer player2 = new CarlinhosPlayer();
                 
                 // FULL_BOARD...
+<<<<<<< HEAD
                 new AmazonsBoard(player1 , player2, 10, Level.FULL_BOARD);
+=======
+                new AmazonsBoard(player1 , player2, 2, Level.QUARTERBOARD);
+>>>>>>> e34d2d077f0a19cc3f034337e8d9afc421415145
                 
             }
         });
