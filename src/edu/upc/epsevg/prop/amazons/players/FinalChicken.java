@@ -34,7 +34,7 @@ public class FinalChicken implements IPlayer, IAuto {
     long nnodes;
 
     // taula de zobrist per representar al taulell
-    long[][][] zobristTable;
+    // long[][][] zobristTable;
 
     /**
      * Constructor buit, en aquest cas la profundització es farà de forma
@@ -49,8 +49,8 @@ public class FinalChicken implements IPlayer, IAuto {
         this.nnodes = 0;
 
         // inicialització i generació de la taula zobrist
-        this.zobristTable = new long[10][10][3];
-        generaTaulaHash();
+        // this.zobristTable = new long[10][10][3];
+        // generaTaulaHash();
     }
 
     /**
@@ -69,8 +69,8 @@ public class FinalChicken implements IPlayer, IAuto {
         this.nnodes = 0;
 
         // inicialització i generació de la taula zobrist
-        this.zobristTable = new long[10][10][3];
-        generaTaulaHash();
+        //this.zobristTable = new long[10][10][3];
+        // generaTaulaHash();
     }
 
     /**
@@ -82,13 +82,14 @@ public class FinalChicken implements IPlayer, IAuto {
      */
     @Override
     public Move move(GameStatus s) {
-        System.out.println("CELES BUIDES: "+s.getEmptyCellsCount());
+        
         // Inicialitzem sempre el timeout a false per cada moviment.
         this.timeout = false;
 
         // en m tindrem el moviment actual i en mAnterior tindrem el moviment anterior en cas de que hi hagi timout i la variable m estigui a null.
         Move m = null;
         Move mAnterior = null;
+        
 
         //En cas de que la profunditat sigui iterada
         if (profunditatIterada) {
@@ -148,6 +149,7 @@ public class FinalChicken implements IPlayer, IAuto {
 
         // Aprofitem per calcular el valor del hash en el estat actual del taulell.
         //long hash = RecalcularHash(s);
+        
         // Posarem el millor Moviment en una array on el primer element es el punt on es trobla l'amazona i el segon on mourem l'amazona i el tercer on colocarem la fletxa.
         Point[] millorMoviment = new Point[3];
 
@@ -211,7 +213,6 @@ public class FinalChicken implements IPlayer, IAuto {
 
         // Aquest cas es dona quan tots els nodes explorats donan com heuristica -Infinit, per tant tots els moviments son perdedors i farem un moviments qualsevol perque ja hem perdut.
         if (millorMoviment[0] == null) {
-            System.out.println("He perdut");
             millorMoviment = moviment.clone();
         }
 
@@ -398,6 +399,7 @@ public class FinalChicken implements IPlayer, IAuto {
      * @return Un enter amb el valor de l'heurística
      * 
      */
+    
     public int getHeuristica(GameStatus s, CellType color) {
 
 //      Generem els valors inicials que farem servir per calcular cada jugada
@@ -643,40 +645,40 @@ public class FinalChicken implements IPlayer, IAuto {
      * totes les configuracions del taulell.
      *
      */
-    private void generaTaulaHash() {
+//    private void generaTaulaHash() {
+//
+//        Random rand = new Random();
+//        for (int i = 0; i < 10; i++) {
+//            for (int j = 0; j < 10; j++) {
+//                for (int k = 0; k < 3; k++) {
+//                    this.zobristTable[i][j][k] = rand.nextLong();
+//                }
+//            }
+//        }
+//    }
 
-        Random rand = new Random();
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                for (int k = 0; k < 3; k++) {
-                    this.zobristTable[i][j][k] = rand.nextLong();
-                }
-            }
-        }
-    }
-
-    /**
-     * Funció que itera sobre tot el taulell i retorna el valor hash que
-     * representa l'estat del tauell.
-     *
-     * @param s Estat determinat del taulell
-     * @return Retorna el valor hash obtingut que representa el estat del
-     * taulell.
-     */
-    private long RecalcularHash(GameStatus s) {
-        long h = 0;
-        //TODO: Hacer variable el tamaño del tablero
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                // Anirem fent acomuladament ela operació xor entre totes les peces no buides del tauell.
-                if (s.getPos(i, j) != CellType.EMPTY) {
-                    CellType pieza = s.getPos(i, j);
-                    h ^= this.zobristTable[i][j][pieza.ordinal() - 1];
-                }
-            }
-        }
-        return h;
-    }
+//    /**
+//     * Funció que itera sobre tot el taulell i retorna el valor hash que
+//     * representa l'estat del tauell.
+//     *
+//     * @param s Estat determinat del taulell
+//     * @return Retorna el valor hash obtingut que representa el estat del
+//     * taulell.
+//     */
+//    private long RecalcularHash(GameStatus s) {
+//        long h = 0;
+//        //TODO: Hacer variable el tamaño del tablero
+//        for (int i = 0; i < 9; i++) {
+//            for (int j = 0; j < 9; j++) {
+//                // Anirem fent acomuladament ela operació xor entre totes les peces no buides del tauell.
+//                if (s.getPos(i, j) != CellType.EMPTY) {
+//                    CellType pieza = s.getPos(i, j);
+//                    h ^= this.zobristTable[i][j][pieza.ordinal() - 1];
+//                }
+//            }
+//        }
+//        return h;
+//    }
 
     /**
      * Funció que ens avisa que hem de parar la cerca en curs perquè s'ha
