@@ -387,30 +387,19 @@ public class FinalChicken implements IPlayer, IAuto {
     }
 
     public int getHeuristica(GameStatus s, CellType color) {
-
+        //System.out.println("get heuristica");
         int puntuacio = 0;
         int puntuacioRival = 0;
-
         for (int i = 0; i < s.getNumberOfAmazonsForEachColor(); i++) {
+            
+            //Primer jugador
             Point Amazona = s.getAmazon(color, i);
-            ArrayList< ArrayList<Point>> taulaTerritori = new ArrayList< ArrayList<Point>>();
-
-            int nMovimentsPerPosicio = 1;
-            int taulellComplet = s.getEmptyCellsCount();
-            int nElementTerritori = 0;
-
-            puntuacio += evaluaTerritori(s, taulaTerritori, Amazona, nMovimentsPerPosicio, taulellComplet, nElementTerritori);
+            puntuacio += evaluaTerritori(s, Amazona);
+            //---------------------------------------------------------------------
             
-            
+            //Segon jugador
             Point AmazonaRival = s.getAmazon(CellType.opposite(color), i);
-            
-            taulaTerritori = new ArrayList< ArrayList<Point>>();
-
-            nMovimentsPerPosicio = 1;
-         
-            nElementTerritori = 0;
-
-            puntuacioRival += evaluaTerritori(s, taulaTerritori, AmazonaRival, nMovimentsPerPosicio, taulellComplet, nElementTerritori);
+            puntuacioRival += evaluaTerritori(s, AmazonaRival);
             
 
         }
@@ -462,29 +451,95 @@ public class FinalChicken implements IPlayer, IAuto {
         //System.out.println(s.toString());
         //}
         ++this.nnodes;
-        return (puntuacio - puntuacioRival);
+        return (puntuacioRival - puntuacio);
+    }
+    
+    private void imprimirTauler(int [][] a){
+        for (int i = 0; i < a.length; i++) {
+            for (int j = 0; j < a[i].length; j++) {
+                System.out.print(a[i][j] + " ");
+            }
+            System.out.print("\n");
+        }
     }
 
-    private int evaluaTerritori(GameStatus s, ArrayList<ArrayList<Point>> taulaTerritori, Point Amazona, int nMovimentsPerPosicio, int taulellCompleta, int nElementTerritori) {
+    private ArrayList<Point> obtenirAdjacentsBuits(int[][] tauler, Point Posicio){
+         ArrayList<Point> resultat = new ArrayList<>();
+         int posX = Posicio.x;
+         int posY = Posicio.y;
+         Point a;
+         for (int i = -1; i < 2; i++) {
+             for (int j = -1; j < 2; j++) {
+                 if((posX+i>=0 && posX+i<tauler.length) && (posY+j>=0 && posY+j<tauler.length) && tauler[posX+i][posY+j] == 0){
+                      a = new Point(posX+i, posY+j);
+                     resultat.add(a);
+                 }
+             }
+            
+        }
+        return resultat;
+    }
+    
+    private int evaluaTerritori(GameStatus s, Point Amazona) {
+        //System.out.println("evalua territorio");
+        //ArrayList< ArrayList<Point>> taulaTerritori = new ArrayList< >();
 
+        int nMov = 1;
+        int resultat = 0;
+        int taulellComplet = s.getEmptyCellsCount();
+        int nElementTerritori = 0;
+        int[][] a = new int [s.getSize()][s.getSize()]; //suponemos que todo serán 0
+        ArrayList<Point> Pendents = s.getAmazonMoves(Amazona, false);
         
-        while (nElementTerritori < taulellCompleta) {
+        while(nElementTerritori < taulellComplet && Pendents.size()>0){
+            System.out.println("nelement: "+nElementTerritori+" // "+taulellComplet);
+            imprimirTauler(a);
+            for (int i = 0; i<Pendents.size(); ++i){
+                a[Pendents.get(i).x][Pendents.get(i).y] = nMov;
+                resultat += nMov;
+                ++nElementTerritori;
+            }
+            ArrayList<Point> Pendents_tmp = new ArrayList<>();
+
+
+            for(int j = 0; j<Pendents.size(); ++j){
+                ArrayList<Point> moviments = obtenirAdjacentsBuits(a, Pendents.get(j));//obtenirMovimentsDisponibles(s, Pendents.get(j), nMov);
+                for(int k = 0; k<moviments.size() && (!Pendents_tmp.contains(moviments.get(k))); ++k){
+                    Pendents_tmp.add(moviments.get(k));
+                }
+            }
+            //Pendents = new ArrayList<>();
+            Pendents = Pendents_tmp;
+            ++nMov;
+
+        }
+
+        System.out.println("nelement FINAL: "+nElementTerritori+" // "+taulellComplet);
+        imprimirTauler(a);
+        return resultat;
+        
+        
+       /** while (nElementTerritori < taulellCompleta) {
         
             if (nMovimentsPerPosicio == 1) {
                 ArrayList<Point> moviments = s.getAmazonMoves(Amazona, false);
                 taulaTerritori.add(moviments);
                 nElementTerritori += moviments.size();
-                if(moviments.size() == 0)
+                if(moviments.isEmpty())
                     break;
             } 
             
             else if (nMovimentsPerPosicio > 1) {
+                System.out.println("Amazonizador: "+Amazona);
+                System.out.println("movposicio: "+nMovimentsPerPosicio);
+                System.out.println("comptador: "+nElementTerritori+" // "+taulellCompleta);
                 taulaTerritori.add(new ArrayList());
                 for (int i = 0; i < taulaTerritori.get(nMovimentsPerPosicio - 2).size() && nElementTerritori < taulellCompleta; i++) {
                     Point posicio = taulaTerritori.get(nMovimentsPerPosicio - 2).get(i);
                     ArrayList<Point> moviments = obtenirMovimentsDisponibles(s, posicio);
 
                     for (int m = 0; m < moviments.size() && nElementTerritori < taulellCompleta; m++) {
+                        System.out.println("moviment de m: "+moviments.get(m));
                         if (!taulaTerritori.get(nMovimentsPerPosicio - 2).contains(moviments.get(m))) {
                             taulaTerritori.get(nMovimentsPerPosicio - 1).add(moviments.get(m));
                             nElementTerritori++;
@@ -504,14 +559,17 @@ public class FinalChicken implements IPlayer, IAuto {
         {
             evaluacio += e * taulaTerritori.get(e-1).size();
         }
-        return evaluacio;
+        
+        return evaluacio;**/
     }
     
     private ArrayList<Point> obtenirMovimentsDisponibles(GameStatus s, Point Posicio)
     {
-        ArrayList<Point> MovimentsDisponibles = new ArrayList<Point>();
+
+        //System.out.println("moviments disponbiles");
+        ArrayList<Point> MovimentsDisponibles = new ArrayList<>();
         
-        ArrayList<Point> dir = new ArrayList<Point>();
+        ArrayList<Point> dir = new ArrayList<>();
         
         for (int i = -1; i < 2; i++)
         {
@@ -526,7 +584,8 @@ public class FinalChicken implements IPlayer, IAuto {
            int posX = Posicio.x + dir.get(i).x;
            int posY = Posicio.y + dir.get(i).y;
            
-           while((posX>0 && posX<s.getSize()) && (posY>0 && posY<s.getSize()) && s.getPos(posX, posY) == CellType.EMPTY)
+           //TODO: Modificades variables posx i posy perque coincideixin amb >= 0
+           while((posX>=0 && posX<s.getSize()) && (posY>=0 && posY<s.getSize()) && s.getPos(posX, posY) == CellType.EMPTY)
            {
                MovimentsDisponibles.add(new Point(posX, posY));
                posX+=dir.get(i).x;
@@ -534,6 +593,7 @@ public class FinalChicken implements IPlayer, IAuto {
                
            }
         }
+       //System.out.println("moviments sale");
        return MovimentsDisponibles;   
     }
     
