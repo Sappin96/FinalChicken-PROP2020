@@ -37,7 +37,7 @@ public class FinalChicken implements IPlayer, IAuto {
     long[][][] zobristTable;
 
     /**
-     * Constructor buit. En aquest cas la profundització es farà de forma
+     * Constructor buit, en aquest cas la profundització es farà de forma
      * iterada.
      */
     public FinalChicken() {
@@ -54,7 +54,7 @@ public class FinalChicken implements IPlayer, IAuto {
     }
 
     /**
-     * Constructor parametritzat amb una profunditat determinada.
+     * Constructor parametritzat amb una profunditat determinada que inhabilita el temporitzador (timeout).
      *
      * @param profunditat El valor de la profunditat haurà de ser > 0
      */
@@ -82,7 +82,7 @@ public class FinalChicken implements IPlayer, IAuto {
      */
     @Override
     public Move move(GameStatus s) {
-
+        System.out.println("CELES BUIDES: "+s.getEmptyCellsCount());
         // Inicialitzem sempre el timeout a false per cada moviment.
         this.timeout = false;
 
@@ -90,14 +90,14 @@ public class FinalChicken implements IPlayer, IAuto {
         Move m = null;
         Move mAnterior = null;
 
-        //En cas de que la profunditat sigui iterada 
+        //En cas de que la profunditat sigui iterada
         if (profunditatIterada) {
             //comencarem amb una profunditat = 1
             this.prof = 1;
             // mentre no hi hagi timout
             while (!this.timeout) {
 
-                // Ens guardaem sempre el moviment anterior 
+                // Ens guardaem sempre el moviment anterior
                 if (m != null) {
                     mAnterior = new Move(m.getAmazonFrom(), m.getAmazonTo(), m.getArrowTo(), (int) m.getNumerOfNodesExplored(), m.getMaxDepthReached(), m.getSearchType());
                 }
@@ -127,7 +127,7 @@ public class FinalChicken implements IPlayer, IAuto {
      * determinada donat un estat del taulell utilitzant l'algorisme minimax.
      *
      * El que fem en aquesta funció es preparar les podes alfa i beta amb els
-     * seus valors i la profunidat a la que arribarem (com a maxim). Despres
+     * seus valors i la profunidat a la que arribarem (com a màxim). Després
      * generarem totes les combinacions de moviments possibles i realitzarem el
      * minimax assegurant tenint sempre a la variable millorMoviment el moviment
      * més prometedor.
@@ -151,7 +151,7 @@ public class FinalChicken implements IPlayer, IAuto {
         // Posarem el millor Moviment en una array on el primer element es el punt on es trobla l'amazona i el segon on mourem l'amazona i el tercer on colocarem la fletxa.
         Point[] millorMoviment = new Point[3];
 
-        // També ens fa falta una array on guardarem els valors per cada moviment realitzat 
+        // També ens fa falta una array on guardarem els valors per cada moviment realitzat
         Point[] moviment = new Point[3];
 
         // Per cada amazona del jugador
@@ -182,23 +182,23 @@ public class FinalChicken implements IPlayer, IAuto {
                     // Sobre l'estat copia del taulell que hem realitzem abans farem el moviment.
                     statusCopia.moveAmazon(origen, desti);
                     statusCopia.placeArrow(fletxa);
-//                    
+//
                     // Aprofitem per fer les diferents xors per obtenir el valor hash despres de haber fet el moviment complet.
 
 //                    hash ^= this.zobristTable[origen.x][origen.y][s.getCurrentPlayer().ordinal() - 1];
 //                    hash ^= this.zobristTable[desti.x][desti.y][s.getCurrentPlayer().ordinal() - 1];
 //                    hash ^= this.zobristTable[fletxa.x][fletxa.y][CellType.ARROW.ordinal() - 1];
-                    // Posarem el moviment en una array 
+                    // Posarem el moviment en una array
                     moviment[0] = origen;
                     moviment[1] = desti;
                     moviment[2] = fletxa;
 
-                    // Ara cridarem al minimitzador amb l'estat on hem fet el moviment 
+                    // Ara cridarem al minimitzador amb l'estat on hem fet el moviment
                     int eval = Minimitzador(statusCopia, profunditat - 1, Alpha, Beta);
 
-                    // En cas de que sigui la millor heuristica trobada fins ara 
+                    // En cas de que sigui la millor heuristica trobada fins ara
                     if (eval > Alpha) {
-                        // guardarem la columna com a millorMoviment fins que un altre doni millor heuristica 
+                        // guardarem la columna com a millorMoviment fins que un altre doni millor heuristica
                         millorMoviment = moviment.clone();
                         // actualitzem Alfa amb la millor heurisitica que hem trobat de moment.
                         Alpha = eval;
@@ -211,6 +211,7 @@ public class FinalChicken implements IPlayer, IAuto {
 
         // Aquest cas es dona quan tots els nodes explorats donan com heuristica -Infinit, per tant tots els moviments son perdedors i farem un moviments qualsevol perque ja hem perdut.
         if (millorMoviment[0] == null) {
+            System.out.println("He perdut");
             millorMoviment = moviment.clone();
         }
 
@@ -358,10 +359,10 @@ public class FinalChicken implements IPlayer, IAuto {
     }
 
     /**
-     * Funció que ens reitorna una llista amb totes les caselles buides del
+     * Funció que ens retorna una llista amb totes les caselles buides del
      * taulell despres de moure una Amazona
      *
-     * @param s Estat del taulel determinat
+     * @param s Estat del taulell determinat
      * @param am Representa el integer que ens diu quina amazona sera
      * @param FIN Representa la posicio on mourem l'amazona.
      * @return retornem una llista amb totes les posicions buides del taulell on
@@ -386,191 +387,230 @@ public class FinalChicken implements IPlayer, IAuto {
         return casellesBuides;
     }
 
+     /**
+     * Funció que envers un GameStatus i un Jugador identificat per el color 
+     * retorna un enter (positiu o negatiu) d'una jugada especifica, on
+     * es comproven tots els valors adjacents a cada peça i la movilitat d'aquestes.
+     * 
+     *
+     * @param s Estat del taulell determinat
+     * @param color Representa el color de les Amazones 
+     * @return Un enter amb el valor de l'heurística
+     * 
+     */
     public int getHeuristica(GameStatus s, CellType color) {
-        //System.out.println("get heuristica");
-        int puntuacio = 0;
-        int puntuacioRival = 0;
+
+//      Generem els valors inicials que farem servir per calcular cada jugada
+//      i la final
+        int movPossibles = 0;
+        int movPossiblesRival = 0;
+        int encontra = 0; int afavor = 0;
+        
+//      Generem els ArraysList i els punts per a calcular el nombre de moviments
+        ArrayList<Point> MovimentsAmazona;
+        ArrayList<Point> MovimentsAmazonaEnemigues;
+        Point maleante = new Point();
+        Point honorable = new Point();
+
+        //Sabent que hi ha el mateix nombre de blanques que de negres, seleccionem
+        //creem un comptador que vagi desde 0 fins al nombre de Amazones que te
+        //el tauler
         for (int i = 0; i < s.getNumberOfAmazonsForEachColor(); i++) {
+            //Aconseguim les amazones del (color) i nombre (i) indicades
+            MovimentsAmazona = s.getAmazonMoves(s.getAmazon(color, i), false);
             
-            //Primer jugador
-            Point Amazona = s.getAmazon(color, i);
-            puntuacio += evaluaTerritori(s, Amazona);
-            //---------------------------------------------------------------------
+            //Sumem la mida del Array a la variable "movPossibles"
+            movPossibles += MovimentsAmazona.size();
             
-            //Segon jugador
-            Point AmazonaRival = s.getAmazon(CellType.opposite(color), i);
-            puntuacioRival += evaluaTerritori(s, AmazonaRival);
+            //Aconseguim les amazones del (color) i enter (i) indicades
+            MovimentsAmazonaEnemigues = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
             
-
-        }
-
-//        int movPossibles = 0;
-//        int movPossiblesRival = 0;
-//
-//        ArrayList<Point> MovimentsAmazona;
-//        ArrayList<Point> MovimentsAmazonaEnemigues;
-//
-//        for (int i = 0; i < s.getNumberOfAmazonsForEachColor(); i++) {
-//            MovimentsAmazona = s.getAmazonMoves(s.getAmazon(color, i), false); // restricted 
-//            movPossibles += MovimentsAmazona.size();
-//            MovimentsAmazonaEnemigues = s.getAmazonMoves(s.getAmazon(CellType.opposite(color), i), false); // restricted
-//            movPossiblesRival += MovimentsAmazonaEnemigues.size();
-//            
-        /**
-         * int encontra = 0; int afavor = 0; int x; int y;
-         *
-         *
-         * Point maleante = new Point(s.getAmazon(CellType.opposite(color), i));
-         * Point honorable = new Point(s.getAmazon(color, i));
-         *
-         * for (x = -1; x < 2; x++){ for (y = -1; y<2; y++){
-         * if(maleante.x+x>=0 && maleante.x+x<s.getSize() && maleante.y+y>=0 && maleante.y+y<s.getSize() && (s.getPos(maleante.x+x,maleante.y+y) != CellType.EMPTY) && (s.getPos(maleante.x+x,maleante.y+y) != CellType.opposite(color))){
-         * ++afavor;
-         * }
-         * if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0
-         * && honorable.y+y<s.getSize() &&
-         * (s.getPos(honorable.x+x,honorable.y+y) != CellType.EMPTY) &&
-         * (s.getPos(honorable.x+x,honorable.y+y) != color)){ ++encontra; }
-         *
-         * }
-         * }
-         * if(maleante.x == 0 || maleante.x == s.getSize()-1 || maleante.y == 0
-         * || maleante.y == s.getSize()-1) afavor +=3; if(honorable.x == 0 ||
-         * honorable.x == s.getSize()-1 || honorable.y == 0 || honorable.y ==
-         * s.getSize()-1) encontra += 3;
-         *
-         *
-         * //if(afavor==9) //System.out.println("se me va la pinza:
-         * "+maleante.x+" "+maleante.y); //movPossibles += afavor*2;*
-         */
-//            }
-        //movPossibles += Math.pow(2, afavor);
-        //movPossiblesRival += Math.pow(2, encontra);
-        //System.out.println("ficha ENEMIGA("+i+") encontra por "+afavor+" : ("+ maleante.x+" "+maleante.y+")");
-        //System.out.println("ficha AMIGA("+i+") encontra por "+encontra+" : ("+ honorable.x+" "+honorable.y+")");
-        //System.out.println(s.toString());
-        //}
-        ++this.nnodes;
-        return (puntuacioRival - puntuacio);
-    }
-    
-    private void imprimirTauler(int [][] a){
-        for (int i = 0; i < a.length; i++) {
-            for (int j = 0; j < a[i].length; j++) {
-                System.out.print(a[i][j] + " ");
-            }
-            System.out.print("\n");
-        }
-    }
-
-    private ArrayList<Point> obtenirAdjacentsBuits(int[][] tauler, Point Posicio){
-         ArrayList<Point> resultat = new ArrayList<>();
-         int posX = Posicio.x;
-         int posY = Posicio.y;
-         Point a;
-         for (int i = -1; i < 2; i++) {
-             for (int j = -1; j < 2; j++) {
-                 if((posX+i>=0 && posX+i<tauler.length) && (posY+j>=0 && posY+j<tauler.length) && tauler[posX+i][posY+j] == 0){
-                      a = new Point(posX+i, posY+j);
-                     resultat.add(a);
-                 }
-             }
+            //Sumem la mida del Array a la variable "movPossiblesRival"
+            movPossiblesRival += MovimentsAmazonaEnemigues.size();
             
-        }
-        return resultat;
-    }
-    
-    private int evaluaTerritori(GameStatus s, Point Amazona) {
-        //System.out.println("evalua territorio");
-        //ArrayList< ArrayList<Point>> taulaTerritori = new ArrayList< >();
+            //Inicialitzem les variables "encontra" i "afavor".
+            encontra = 0;
+            afavor = 0;
 
-        int nMov = 1;
-        int resultat = 0;
-        int taulellComplet = s.getEmptyCellsCount();
-        int nElementTerritori = 0;
-        int[][] a = new int [s.getSize()][s.getSize()]; //suponemos que todo serán 0
-        ArrayList<Point> Pendents = s.getAmazonMoves(Amazona, false);
-        
-        while(nElementTerritori < taulellComplet && Pendents.size()>0){
-            System.out.println("nelement: "+nElementTerritori+" // "+taulellComplet);
-            imprimirTauler(a);
-            for (int i = 0; i<Pendents.size(); ++i){
-                a[Pendents.get(i).x][Pendents.get(i).y] = nMov;
-                resultat += nMov;
-                ++nElementTerritori;
-            }
-            ArrayList<Point> Pendents_tmp = new ArrayList<>();
+            //Inicialitzem els punters "maleante" i "honorable" amb el Jugador 
+            //(color) i el enter (i) indicat.
+            //maleante correspon al equip enemic en aquesta heurística i
+            //honorable al nostre equip.
+            maleante = new Point(s.getAmazon(CellType.opposite(color), i));
+            honorable = new Point(s.getAmazon(color, i));
 
-
-            for(int j = 0; j<Pendents.size(); ++j){
-                ArrayList<Point> moviments = obtenirAdjacentsBuits(a, Pendents.get(j));//obtenirMovimentsDisponibles(s, Pendents.get(j), nMov);
-                for(int k = 0; k<moviments.size() && (!Pendents_tmp.contains(moviments.get(k))); ++k){
-                    Pendents_tmp.add(moviments.get(k));
-                }
-            }
-            //Pendents = new ArrayList<>();
-            Pendents = Pendents_tmp;
-            ++nMov;
-
-        }
-
-        System.out.println("nelement FINAL: "+nElementTerritori+" // "+taulellComplet);
-        imprimirTauler(a);
-        return resultat;
-        
-        
-       /** while (nElementTerritori < taulellCompleta) {
-        
-            if (nMovimentsPerPosicio == 1) {
-                ArrayList<Point> moviments = s.getAmazonMoves(Amazona, false);
-                taulaTerritori.add(moviments);
-                nElementTerritori += moviments.size();
-                if(moviments.isEmpty())
-                    break;
-            } 
-            
-            else if (nMovimentsPerPosicio > 1) {
-                System.out.println("Amazonizador: "+Amazona);
-                System.out.println("movposicio: "+nMovimentsPerPosicio);
-                System.out.println("comptador: "+nElementTerritori+" // "+taulellCompleta);
-                taulaTerritori.add(new ArrayList());
-                for (int i = 0; i < taulaTerritori.get(nMovimentsPerPosicio - 2).size() && nElementTerritori < taulellCompleta; i++) {
-                    Point posicio = taulaTerritori.get(nMovimentsPerPosicio - 2).get(i);
-                    ArrayList<Point> moviments = obtenirMovimentsDisponibles(s, posicio);
-
-                    for (int m = 0; m < moviments.size() && nElementTerritori < taulellCompleta; m++) {
-                        System.out.println("moviment de m: "+moviments.get(m));
-                        if (!taulaTerritori.get(nMovimentsPerPosicio - 2).contains(moviments.get(m))) {
-                            taulaTerritori.get(nMovimentsPerPosicio - 1).add(moviments.get(m));
-                            nElementTerritori++;
-                        }
+            //Mirarem totes les posicions adjacents a aquestes fitxes en busca
+            //de posibles problemes o ventatges al seu voltant (sols a una 
+            //posició de distancia).
+            for (int x = -1; x < 2; x++){
+                for (int y = -1; y<2; y++){
+                    
+                    //MIRANT L'ENEMIC: Si la posició que anem a mirar no 
+                    //sobresurt dels limits i aquesta conté una CREUETA o una
+                    //fitxa del JUGADOR NOSTRE; Llavors sumem 1 a la variable
+                    //que juga al nostre favor (afavor).
+                    if(maleante.x+x>=0 && maleante.x+x<s.getSize() && maleante.y+y>=0 && maleante.y+y<s.getSize() && ((s.getPos(maleante.x+x,maleante.y+y) == CellType.ARROW) || (s.getPos(maleante.x+x,maleante.y+y) == color))){
+                        ++afavor;
                     }
+                    
+                    //MIRANT L'AMIC: Si la posició que anem a mirar no 
+                    //sobresurt dels limits i aquesta conté una CREUETA o una
+                    //fitxa del JUGADOR CONTRARI; Llavors sumem 1 a la variable
+                    //que juga al nostre favor (afavor).
+                    if(honorable.x+x>=0 && honorable.x+x<s.getSize() && honorable.y+y>=0
+                    && honorable.y+y<s.getSize() &&
+                    ((s.getPos(honorable.x+x,honorable.y+y) == CellType.ARROW) ||
+                    (s.getPos(honorable.x+x,honorable.y+y) == CellType.opposite(color)))){
+                        ++encontra;
+                    }
+
                 }
             }
             
-           // System.out.println("nElementTErriotri"+nElementTerritori);
+            //Creem un boolea paret que ens indicarà quan una fitxa resideix
+            //a la vora del mur. Quan descobrim que resideix aqui la posarem
+            //sota vigilancia i si torna a apareixer voldrá dir que viu en una
+            //cantonada i per tant mentres de sumarli 3 n'hi sumarem 2.
+            boolean paret = false;
             
-            ++nMovimentsPerPosicio;
+            //Comprovem la fitxa enemiga en X equivalent a la pos. 0
+            if(maleante.x == 0){
+                afavor +=3;
+                paret = true;
+            }
+            
+            //Comprovem la fitxa enemiga en X equivalent a la pos. MIDA-1
+            if(maleante.x == s.getSize()-1){
+                if(paret){
+                    afavor+=2;
+                }else{
+                    afavor +=3;
+                    paret = true;
+                }
+
+            }
+
+            //Comprovem la fitxa enemiga en Y equivalent a la pos. 0
+            if(maleante.y == 0){
+                if(paret){
+                    afavor+=2;
+                }else{
+                    afavor +=3;
+                    paret = true;
+                }
+            }
+            
+            //Comprovem la fitxa enemiga en Y equivalent a la pos. MIDA-1
+            if(maleante.y == s.getSize()-1){
+                if(paret){
+                    afavor+=2;
+                }else{
+                    afavor +=3;
+                    //No modifiquem paret ja que la reinicialitzarem.
+                }
+            }
+//------------------------------------------------------------------------------
+            paret = false;
+
+            //Comprovem la fitxa enemiga en X equivalent a la pos. 0
+            if(honorable.x == 0){
+                encontra += 3;
+                paret = true;
+            }
+            
+            //Comprovem la fitxa enemiga en X equivalent a la pos. MIDA-1
+            if(honorable.x == s.getSize()-1){
+                if(paret){
+                    encontra+=2;
+                }else{
+                    encontra +=3;
+                    paret = true;
+                }
+            }
+            
+            //Comprovem la fitxa enemiga en Y equivalent a la pos. 0
+            if(honorable.y == 0){
+                if(paret){
+                    encontra+=2;
+                }else{
+                    encontra +=3;
+                    paret = true;
+                }
+            }
+            
+            //Comprovem la fitxa enemiga en Y equivalent a la pos. MIDA-1
+            if(honorable.y == s.getSize()-1){
+                if(paret){
+                    encontra+=2;
+                }else{
+                    encontra +=3;
+                    //No modifiquem paret ja que la reinicialitzarem.
+                }
+            }
+            
+            //Finalment elevem a 2 el resultat corresponent i el sumem al
+            //resultat final, les variables "afavor" i "encontra" es reinicialitzarán.
+            movPossibles += Math.pow(2, afavor);
+            movPossiblesRival += Math.pow(2, encontra);
         }
         
-        int evaluacio = 0;
+        //Sumem 1 al nnodes en vers que hem explorat una heuristica més
+        ++this.nnodes;
         
-        for(int e = 1; e <= taulaTerritori.size(); e++)
-        {
-            evaluacio += e * taulaTerritori.get(e-1).size();
-        }
-        
-        return evaluacio;**/
+        //Retornem la resta dels nostres moviments envers les del enemic.
+        //El valor ens ha de servir per discriminar on posar la creueta i la
+        //fitxa en la seguent iteració.
+        return (movPossibles - movPossiblesRival);
     }
-    
+
+//    private int evaluaTerritori(GameStatus s, ArrayList<ArrayList<Point>> taulaTerritori, Point Amazona, int nMovimentsPerPosicio, int taulellCompleta, int nElementTerritori) {
+//
+//
+//        while (nElementTerritori < taulellCompleta) {
+//
+//            if (nMovimentsPerPosicio == 1) {
+//                ArrayList<Point> moviments = s.getAmazonMoves(Amazona, false);
+//                taulaTerritori.add(moviments);
+//                nElementTerritori += moviments.size();
+//                if(moviments.size() == 0)
+//                    break;
+//            }
+//
+//            else if (nMovimentsPerPosicio > 1) {
+//                taulaTerritori.add(new ArrayList());
+//                for (int i = 0; i < taulaTerritori.get(nMovimentsPerPosicio - 2).size() && nElementTerritori < taulellCompleta; i++) {
+//                    Point posicio = taulaTerritori.get(nMovimentsPerPosicio - 2).get(i);
+//                    ArrayList<Point> moviments = obtenirMovimentsDisponibles(s, posicio);
+//
+//                    for (int m = 0; m < moviments.size() && nElementTerritori < taulellCompleta; m++) {
+//                        if (!taulaTerritori.get(nMovimentsPerPosicio - 2).contains(moviments.get(m))) {
+//                            taulaTerritori.get(nMovimentsPerPosicio - 1).add(moviments.get(m));
+//                            nElementTerritori++;
+//                        }
+//                    }
+//                }
+//            }
+//
+//           // System.out.println("nElementTErriotri"+nElementTerritori);
+//
+//            ++nMovimentsPerPosicio;
+//        }
+//
+//        int evaluacio = 0;
+//
+//        for(int e = 1; e <= taulaTerritori.size(); e++)
+//        {
+//            evaluacio += e * taulaTerritori.get(e-1).size();
+//        }
+//        return evaluacio;
+//    }
+
     private ArrayList<Point> obtenirMovimentsDisponibles(GameStatus s, Point Posicio)
     {
+        ArrayList<Point> MovimentsDisponibles = new ArrayList<Point>();
 
-        //System.out.println("moviments disponbiles");
-        ArrayList<Point> MovimentsDisponibles = new ArrayList<>();
-        
-        ArrayList<Point> dir = new ArrayList<>();
-        
+        ArrayList<Point> dir = new ArrayList<Point>();
+
         for (int i = -1; i < 2; i++)
         {
             for(int j = -1; j<2; j++){
@@ -578,27 +618,25 @@ public class FinalChicken implements IPlayer, IAuto {
                     dir.add(new Point(i,j));
             }
         }
-        
+
         for(int i = 0; i<dir.size(); i++)
         {
            int posX = Posicio.x + dir.get(i).x;
            int posY = Posicio.y + dir.get(i).y;
-           
-           //TODO: Modificades variables posx i posy perque coincideixin amb >= 0
-           while((posX>=0 && posX<s.getSize()) && (posY>=0 && posY<s.getSize()) && s.getPos(posX, posY) == CellType.EMPTY)
+
+           while((posX>0 && posX<s.getSize()) && (posY>0 && posY<s.getSize()) && s.getPos(posX, posY) == CellType.EMPTY)
            {
                MovimentsDisponibles.add(new Point(posX, posY));
                posX+=dir.get(i).x;
                posY+=dir.get(i).y;
-               
+
            }
         }
-       //System.out.println("moviments sale");
-       return MovimentsDisponibles;   
+       return MovimentsDisponibles;
     }
-    
-    
-    
+
+
+
 
     /**
      * Funció que s'encarrega de generar la taula de Zobrist que representarà
